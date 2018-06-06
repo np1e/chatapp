@@ -1,7 +1,14 @@
 package JavaServer;
 import javafx.beans.property.SimpleStringProperty;
+
+import javax.json.Json;
+import javax.json.stream.JsonParser;
 import java.io.*;
+import java.math.BigDecimal;
 import java.net.*;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Server {
 
@@ -10,51 +17,100 @@ public class Server {
     private String port;
 
     public Server() {
+
         logs = new SimpleStringProperty();
     }
 
     public void start(final String port) {
 
-        Thread server = new Thread() {
-            @Override
-            public void run() {
-                System.out.println("test");
-                String clientSentence;
-                String capitalizedSentence;
-                ServerSocket welcomeSocket = null;
+        try {
+            final ServerSocket welcomeSocket = new ServerSocket(Integer.parseInt(port));
+
+            while(true) {
                 try {
-                    welcomeSocket = new ServerSocket(Integer.parseInt(port));
-                    setLogs("Server started.");
+                    setLogs("Waiting for client...");
+                    final Socket connectionSocket = welcomeSocket.accept();
+                    setLogs("Client connected.");
+
+                    final Thread thread = new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            System.out.println("thread started");
+                            final BufferedReader reader;
+                            try {
+                                reader = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
+                                final BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(connectionSocket.getOutputStream()));
+
+                                handleRequest(connectionSocket, reader, writer);
+                            } catch (IOException e) {
+                                setLogs(e.getMessage());
+                            }
+                        }
+                    });
+
+                    thread.start();
                 } catch (IOException e) {
-
+                    setLogs(e.getMessage());
                 }
-
-                while (true) {
-                    Socket connectionSocket = null;
-                    try {
-                        connectionSocket = welcomeSocket.accept();
-                        BufferedReader inFromClient =
-                                new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
-                        DataOutputStream outToClient = new DataOutputStream(connectionSocket.getOutputStream());
-                        clientSentence = inFromClient.readLine();
-
-                        setLogs("Received: " + clientSentence);
-                        //System.out.println("Received: " + clientSentence);
-
-                        capitalizedSentence = clientSentence.toUpperCase() + '\n';
-                        setLogs("Sent: " + capitalizedSentence);
-                        outToClient.writeBytes(capitalizedSentence);
-
-                    } catch (Exception e) {
-
-                    }
-                }
-
             }
-        };
 
-        server.start();
+        } catch (IOException e) {
+            setLogs(e.getMessage());
+        }
 
+    }
+
+    // handles the request from a client
+    private void handleRequest(Socket connectionSocket, BufferedReader reader, BufferedWriter writer) {
+
+        InputStream stream = null;
+        try {
+            stream = new ByteArrayInputStream(reader.readLine().getBytes(StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        Map<String, String> request = parseJson(stream);
+        System.out.println("Json parsed");
+
+        switch(request.get("method").toLowerCase()){
+            case "login":
+                setLogs("login");
+                /* if check_authentication():
+                        send_active_user_list()
+                   else:
+                        sendErrorToClient()
+                */
+
+                break;
+            case "register":
+                setLogs("register");
+                // add new user to db
+        }
+
+    }
+
+    private Map parseJson(InputStream in) {
+        Map<String, String> data = new HashMap();
+        JsonParser parser = Json.createParser(in);
+        while(parser.hasNext()) {
+            JsonParser.Event e = parser.next();
+            if(e == JsonParser.Event.KEY_NAME) {
+                switch (parser.getString()) {
+                    case "method":
+                        parser.next();
+                        data.put("method", parser.getString());
+                        break;
+                    case "username":
+                        parser.next();
+                        data.put("username", parser.getString());
+                        break;
+                    case "password":
+                        parser.next();
+                        data.put("password", parser.getString());
+                }
+            }
+        }
+        return data;
     }
 
     public void setLogs(String logs) {
