@@ -62,30 +62,37 @@ public class Server {
 
     // handles the request from a client
     private void handleRequest(Socket connectionSocket, BufferedReader reader, BufferedWriter writer) {
-
-        InputStream stream = null;
-        try {
-            stream = new ByteArrayInputStream(reader.readLine().getBytes(StandardCharsets.UTF_8));
-        } catch (IOException e) {
-            e.printStackTrace();
+        while (true){
+            try {
+                String json = reader.readLine();
+                System.out.println(json);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            try {
+                writer.write("test");
+                writer.flush();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
-        Map<String, String> request = parseJson(stream);
-        System.out.println("Json parsed");
-
-        switch(request.get("method").toLowerCase()){
-            case "login":
-                setLogs("login");
-                /* if check_authentication():
-                        send_active_user_list()
-                   else:
-                        sendErrorToClient()
-                */
-
-                break;
-            case "register":
-                setLogs("register");
-                // add new user to db
-        }
+//        Map<String, String> request = parseJson(stream);
+//        System.out.println("Json parsed");
+//
+//        switch(request.get("method").toLowerCase()){
+//            case "login":
+//                setLogs("login");
+//                /* if check_authentication():
+//                        send_active_user_list()
+//                   else:
+//                        sendErrorToClient()
+//                */
+//
+//                break;
+//            case "register":
+//                setLogs("register");
+//                // add new user to db
+//        }
 
     }
 

@@ -28,6 +28,8 @@ def register(username, password, confirm):
 def makeRequest(data):
     json_string = json.dumps(data)
     clientSocket.send(json_string.encode("utf-8"))
+    recv = clientSocket.recv(1024)
+    print(recv)
 
 def close():
     clientSocket.close()
