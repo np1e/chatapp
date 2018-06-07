@@ -14,12 +14,14 @@ import java.util.Map;
 public class Server {
 
 
+    private PostgreSQLJDBC db;
     private SimpleStringProperty logs;
     private String port;
 
     public Server() {
 
         logs = new SimpleStringProperty();
+        db = new PostgreSQLJDBC();
     }
 
     public void start(final String port) {
@@ -64,16 +66,16 @@ public class Server {
     private void handleRequest(Socket connectionSocket, InputStream stream, BufferedWriter writer) {
 
         Map<String, String> request = parseJson(stream);
-        System.out.println("json parsed");
+        System.out.println("Json parsed");
 
         switch(request.get("method").toLowerCase()){
             case "login":
                 setLogs("login");
-                //if check_authentication():
-                        sendActiveUserList();
-                  /* else:
-                        sendErrorToClient()
-                */
+                if(checkAuthentication(request.get("username"), request.get("password"))) {
+                    sendActiveUserList(connectionSocket);
+                } else {
+                    //sendErrorToClient()
+                }
 
                 break;
             case "register":
@@ -83,11 +85,21 @@ public class Server {
 
     }
 
-    private void sendActiveUserList() {
+    private boolean checkAuthentication(String username, String password_hash) {
+        return true;
+    }
+
+    private void sendActiveUserList(Socket connectionSocket) {
 
     }
 
+    private void setLogs(String log) {
+        logs.set(log);
+    }
+
+
     private Map parseJson(InputStream in) {
+
         Map<String, String> data = new HashMap();
 
         JsonParser parser = Json.createParser(in);
@@ -135,15 +147,10 @@ public class Server {
                         data.put("password", parser.getString());
                 }
             }
-            System.out.println("ok");
         }
         return data;
     }
     */
-
-    public void setLogs(String logs) {
-        this.logs.set(logs);
-    }
 
     public String getLogs() {
         return logs.get();
