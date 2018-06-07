@@ -1,5 +1,6 @@
 package JavaServer;
 import javafx.beans.property.SimpleStringProperty;
+import jdk.nashorn.internal.parser.JSONParser;
 
 import javax.json.Json;
 import javax.json.stream.JsonParser;
@@ -36,12 +37,11 @@ public class Server {
                         @Override
                         public void run() {
                             System.out.println("thread started");
-                            final BufferedReader reader;
+                            final InputStream stream;
                             try {
-                                reader = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
+                                stream = connectionSocket.getInputStream();
                                 final BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(connectionSocket.getOutputStream()));
-
-                                handleRequest(connectionSocket, reader, writer);
+                                handleRequest(connectionSocket, stream, writer);
                             } catch (IOException e) {
                                 setLogs(e.getMessage());
                             }
@@ -61,10 +61,10 @@ public class Server {
     }
 
     // handles the request from a client
-    private void handleRequest(Socket connectionSocket, BufferedReader reader, BufferedWriter writer) {
+    private void handleRequest(Socket connectionSocket, InputStream stream, BufferedWriter writer) {
 
         Map<String, String> request = parseJson(stream);
-        System.out.println("Json parsed");
+        System.out.println("json parsed");
 
         switch(request.get("method").toLowerCase()){
             case "login":
@@ -89,6 +89,34 @@ public class Server {
 
     private Map parseJson(InputStream in) {
         Map<String, String> data = new HashMap();
+
+        JsonParser parser = Json.createParser(in);
+        JsonParser.Event e = null;
+        while(e != JsonParser.Event.END_OBJECT) {
+            e = parser.next();
+            if(e == JsonParser.Event.KEY_NAME) {
+                switch(parser.getString()) {
+                    case "method":
+                        parser.next();
+                        data.put("method", parser.getString());
+                        break;
+                    case "username":
+                        parser.next();
+                        data.put("username", parser.getString());
+                        break;
+                    case "password":
+                        parser.next();
+                        data.put("password", parser.getString());
+                        break;
+                }
+            }
+        }
+        return data;
+    }
+    /*
+    private Map parseJson(InputStream in) {
+        Map<String, String> data = new HashMap();
+
         JsonParser parser = Json.createParser(in);
         while(parser.hasNext()) {
             JsonParser.Event e = parser.next();
@@ -107,9 +135,11 @@ public class Server {
                         data.put("password", parser.getString());
                 }
             }
+            System.out.println("ok");
         }
         return data;
     }
+    */
 
     public void setLogs(String logs) {
         this.logs.set(logs);
