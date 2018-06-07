@@ -13,12 +13,13 @@ import java.util.Map;
 public class Server {
 
 
+    private PostgreSQLJDBC db;
     private SimpleStringProperty logs;
     private String port;
 
     public Server() {
-
         logs = new SimpleStringProperty();
+        db = new PostgreSQLJDBC();
     }
 
     public void start(final String port) {
@@ -36,12 +37,12 @@ public class Server {
                         @Override
                         public void run() {
                             System.out.println("thread started");
-                            final BufferedReader reader;
+                            final InputStream stream;
                             try {
-                                reader = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
+                                stream = connectionSocket.getInputStream();
                                 final BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(connectionSocket.getOutputStream()));
 
-                                handleRequest(connectionSocket, reader, writer);
+                                handleRequest(connectionSocket, stream, writer);
                             } catch (IOException e) {
                                 setLogs(e.getMessage());
                             }
@@ -61,7 +62,7 @@ public class Server {
     }
 
     // handles the request from a client
-    private void handleRequest(Socket connectionSocket, BufferedReader reader, BufferedWriter writer) {
+    private void handleRequest(Socket connectionSocket, InputStream stream, BufferedWriter writer) {
 
         Map<String, String> request = parseJson(stream);
         System.out.println("Json parsed");
@@ -69,11 +70,11 @@ public class Server {
         switch(request.get("method").toLowerCase()){
             case "login":
                 setLogs("login");
-                //if check_authentication():
-                        sendActiveUserList();
-                  /* else:
-                        sendErrorToClient()
-                */
+                if(checkAuthentication(request.get("username"), request.get("password"))) {
+                    sendActiveUserList(connectionSocket);
+                } else {
+                    //sendErrorToClient()
+                }
 
                 break;
             case "register":
@@ -83,15 +84,21 @@ public class Server {
 
     }
 
-    private void sendActiveUserList() {
+    private boolean checkAuthentication(String username, String password_hash) {
+
+    }
+
+    private void sendActiveUserList(Socket connectionSocket) {
 
     }
 
     private Map parseJson(InputStream in) {
+
         Map<String, String> data = new HashMap();
         JsonParser parser = Json.createParser(in);
-        while(parser.hasNext()) {
-            JsonParser.Event e = parser.next();
+        JsonParser.Event e = null;
+        while(e != JsonParser.Event.END_OBJECT) {
+            e = parser.next();
             if(e == JsonParser.Event.KEY_NAME) {
                 switch (parser.getString()) {
                     case "method":
