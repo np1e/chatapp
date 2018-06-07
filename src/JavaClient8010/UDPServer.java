@@ -15,7 +15,7 @@ class UDPServer implements Runnable
     }
 
     public void run() {
-        System.out.println("server established");
+        System.out.println("-- server established --");
         DatagramSocket serverSocket = null;
         try {
             serverSocket = new DatagramSocket(receivePort);
@@ -24,9 +24,11 @@ class UDPServer implements Runnable
         }
         byte[] receiveData = new byte[1024];
         byte[] sendData = new byte[1024];
+
+
         while(true)
         {
-            System.out.println("waiting for data");
+            System.out.println("-- waiting for data --");
             DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
             try {
                 serverSocket.receive(receivePacket);
