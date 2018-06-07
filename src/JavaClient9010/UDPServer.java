@@ -15,7 +15,7 @@ class UDPServer implements Runnable
     }
 
     public void run() {
-        System.out.println("server established");
+        System.out.println("-- server established --");
         DatagramSocket serverSocket = null;
         try {
             serverSocket = new DatagramSocket(receivePort);
@@ -24,9 +24,10 @@ class UDPServer implements Runnable
         }
         byte[] receiveData = new byte[1024];
         byte[] sendData = new byte[1024];
+
         while(true)
         {
-            System.out.println("waiting for data");
+            System.out.println("-- waiting for data --");
             DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
             try {
                 serverSocket.receive(receivePacket);
@@ -34,7 +35,20 @@ class UDPServer implements Runnable
                 e.printStackTrace();
             }
             String sentence = new String(receivePacket.getData());
-            System.out.println("RECEIVED: " + sentence);
+            String sender = new String(String.valueOf(receivePacket.getAddress()));
+            String portst = new String(String.valueOf(receivePacket.getPort()));
+            System.out.println("received: " + sentence  + ", from: " + sender + ", port: " + portst);
+
+            InetAddress IPAddress = receivePacket.getAddress();
+            int port = receivePacket.getPort();
+            sendData = sentence.getBytes();
+            DatagramPacket sendPacket =
+                    new DatagramPacket(sendData, sendData.length, IPAddress, port);
+            try {
+                serverSocket.send(sendPacket);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
         }
     }

@@ -8,26 +8,29 @@ public class Client {
     private int receivePort;
 
     public Client() throws Exception {
-        receivePort = 8010;
+        receivePort = 9010;
         (new Thread(new UDPServer(receivePort))).start();
     }
 
     public void sendmessage(String message, String goalIP, int goalPort) throws Exception {
 
+        // Send datagram
         DatagramSocket clientSocket = new DatagramSocket();
         InetAddress IPAddress = InetAddress.getByName(goalIP);
-        byte[] sendData = new byte[1024];
+        byte[] sendData;
         byte[] receiveData = new byte[1024];
         String sentence = message;
         sendData = sentence.getBytes();
         DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, goalPort);
         clientSocket.send(sendPacket);
-        //DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-        //clientSocket.receive(receivePacket);
-        //String modifiedSentence = new String(receivePacket.getData());
-        //System.out.println("FROM SERVER:" + modifiedSentence);
+        System.out.println("sent: " + sentence);
+
+        // Wait for acknowledgment
+        DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+        clientSocket.receive(receivePacket);
+        String modifiedSentence = new String(receivePacket.getData());
+        System.out.println("received acknowledgment for:" + modifiedSentence);
         clientSocket.close();
-        System.out.println("message sent!");
 
     }
 }
