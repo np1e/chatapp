@@ -1,13 +1,18 @@
 package JavaServer;
+import com.google.gson.Gson;
 import javafx.beans.property.SimpleStringProperty;
 import jdk.nashorn.internal.parser.JSONParser;
 
 import javax.json.Json;
+import javax.json.JsonObject;
+import javax.json.JsonReader;
 import javax.json.stream.JsonParser;
 import java.io.*;
 import java.math.BigDecimal;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -17,6 +22,7 @@ public class Server {
     private PostgreSQLJDBC db;
     private SimpleStringProperty logs;
     private String port;
+    private Map<String, String> activeUsers;
 
     public Server() {
 
@@ -70,28 +76,65 @@ public class Server {
 
         switch(request.get("method").toLowerCase()){
             case "login":
-                setLogs("login");
+                setLogs("requesting login");
                 if(checkAuthentication(request.get("username"), request.get("password"))) {
-                    sendActiveUserList(connectionSocket);
+                    activeUsers.put(request.get("username"), connectionSocket.getInetAddress().toString());
+                    sendActiveUserList(writer);
                 } else {
-                    //sendErrorToClient()
+                    setLogs("Authentication failed.");
                 }
 
                 break;
             case "register":
-                setLogs("register");
-                // add new user to db
+                setLogs("requesting register");
+                try {
+                    ResultSet user = db.getUser(request.get("username"));
+                    setLogs("User already exists.");
+                } catch (SQLException e) {
+                    if(request.get("password") != request.get("confirm")) {
+                        setLogs("passwords must match");
+                    } else {
+                        try {
+                            db.insert(request.get("username"), request.get("password"), connectionSocket.getInetAddress().toString());
+                        } catch (SQLException e1) {
+                            e1.printStackTrace();
+                        }
+                    }
+                }
+
+
         }
 
     }
 
     private boolean checkAuthentication(String username, String password_hash) {
-        return true;
+        ResultSet user = null;
+        try {
+            user = db.getUser(username);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        String password = null;
+        try {
+            password = user.getString(2);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return password == password_hash;
     }
 
-    private void sendActiveUserList(Socket connectionSocket) {
-
+    private void sendActiveUserList(BufferedWriter writer) {
+        Gson gson = new Gson();
+        String json = gson.toJson(activeUsers);
+        System.out.println("json = " + json);
+        try {
+            writer.write(json, 0, json.length());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
+
+
 
     private void setLogs(String log) {
         logs.set(log);
@@ -125,32 +168,7 @@ public class Server {
         }
         return data;
     }
-    /*
-    private Map parseJson(InputStream in) {
-        Map<String, String> data = new HashMap();
 
-        JsonParser parser = Json.createParser(in);
-        while(parser.hasNext()) {
-            JsonParser.Event e = parser.next();
-            if(e == JsonParser.Event.KEY_NAME) {
-                switch (parser.getString()) {
-                    case "method":
-                        parser.next();
-                        data.put("method", parser.getString());
-                        break;
-                    case "username":
-                        parser.next();
-                        data.put("username", parser.getString());
-                        break;
-                    case "password":
-                        parser.next();
-                        data.put("password", parser.getString());
-                }
-            }
-        }
-        return data;
-    }
-    */
 
     public String getLogs() {
         return logs.get();
