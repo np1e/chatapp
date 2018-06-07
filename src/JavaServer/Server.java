@@ -1,5 +1,6 @@
 package JavaServer;
 import javafx.beans.property.SimpleStringProperty;
+import jdk.nashorn.internal.parser.JSONParser;
 
 import javax.json.Json;
 import javax.json.stream.JsonParser;
@@ -18,6 +19,7 @@ public class Server {
     private String port;
 
     public Server() {
+
         logs = new SimpleStringProperty();
         db = new PostgreSQLJDBC();
     }
@@ -41,7 +43,6 @@ public class Server {
                             try {
                                 stream = connectionSocket.getInputStream();
                                 final BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(connectionSocket.getOutputStream()));
-
                                 handleRequest(connectionSocket, stream, writer);
                             } catch (IOException e) {
                                 setLogs(e.getMessage());
@@ -95,10 +96,37 @@ public class Server {
     private Map parseJson(InputStream in) {
 
         Map<String, String> data = new HashMap();
+
         JsonParser parser = Json.createParser(in);
         JsonParser.Event e = null;
         while(e != JsonParser.Event.END_OBJECT) {
             e = parser.next();
+            if(e == JsonParser.Event.KEY_NAME) {
+                switch(parser.getString()) {
+                    case "method":
+                        parser.next();
+                        data.put("method", parser.getString());
+                        break;
+                    case "username":
+                        parser.next();
+                        data.put("username", parser.getString());
+                        break;
+                    case "password":
+                        parser.next();
+                        data.put("password", parser.getString());
+                        break;
+                }
+            }
+        }
+        return data;
+    }
+    /*
+    private Map parseJson(InputStream in) {
+        Map<String, String> data = new HashMap();
+
+        JsonParser parser = Json.createParser(in);
+        while(parser.hasNext()) {
+            JsonParser.Event e = parser.next();
             if(e == JsonParser.Event.KEY_NAME) {
                 switch (parser.getString()) {
                     case "method":
