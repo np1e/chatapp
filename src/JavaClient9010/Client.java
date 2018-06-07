@@ -23,7 +23,7 @@ public class Client {
         DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, goalPort);
         clientSocket.send(sendPacket);
 
-        System.out.println("message sent");
+        System.out.println("sent: " + sentence);
 
         DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
         clientSocket.receive(receivePacket);
