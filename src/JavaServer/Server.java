@@ -86,12 +86,17 @@ public class Server {
     }
 
     private boolean checkAuthentication(String username, String password_hash) {
-
+        return true;
     }
 
     private void sendActiveUserList(Socket connectionSocket) {
 
     }
+
+    private void setLogs(String log) {
+        logs.set(log);
+    }
+
 
     private Map parseJson(InputStream in) {
 
@@ -145,10 +150,7 @@ public class Server {
         }
         return data;
     }
-
-    public void setLogs(String logs) {
-        this.logs.set(logs);
-    }
+    */
 
     public String getLogs() {
         return logs.get();
