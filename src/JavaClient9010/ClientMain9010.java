@@ -1,4 +1,4 @@
-package JavaClient8010;
+package JavaClient9010;
 import javafx.application.Application;
 import javafx.event.EventHandler;
 import javafx.scene.Scene;
@@ -8,11 +8,10 @@ import javafx.scene.control.TextField;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
-import java.net.InetAddress;
-
-public class ClientMain extends Application {
+public class ClientMain9010 extends Application {
     private Client client;
 
     @Override
@@ -23,14 +22,15 @@ public class ClientMain extends Application {
         BorderPane root = new BorderPane();
         VBox center = new VBox();
         root.setCenter(center);
-        Scene scene =  new Scene(root, 200, 200);
+        Scene scene =  new Scene(root, 400, 100);
 
         // Send message
-        TextField goalIP = new TextField();
+        Text title = new Text("Dieser Client hört auf Port 9010 und sendet an Port 8010");
         TextField message = new TextField();
+        message.setPromptText("Deine Nachricht");
         Button submitSend = new Button("Absenden");
         VBox sendmessage = new VBox();
-        sendmessage.getChildren().addAll(goalIP, message, submitSend);
+        sendmessage.getChildren().addAll(title, message, submitSend);
 
         center.getChildren().addAll(sendmessage);
 

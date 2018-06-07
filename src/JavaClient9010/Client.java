@@ -8,7 +8,7 @@ public class Client {
     private int receivePort;
 
     public Client() throws Exception {
-        receivePort = 8010;
+        receivePort = 9010;
         (new Thread(new UDPServer(receivePort))).start();
     }
 
@@ -22,12 +22,14 @@ public class Client {
         sendData = sentence.getBytes();
         DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, goalPort);
         clientSocket.send(sendPacket);
-        //DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-        //clientSocket.receive(receivePacket);
-        //String modifiedSentence = new String(receivePacket.getData());
-        //System.out.println("FROM SERVER:" + modifiedSentence);
+
+        System.out.println("message sent");
+
+        DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+        clientSocket.receive(receivePacket);
+        String modifiedSentence = new String(receivePacket.getData());
+        System.out.println("acknowledged:" + modifiedSentence);
         clientSocket.close();
-        System.out.println("message sent!");
 
     }
 }

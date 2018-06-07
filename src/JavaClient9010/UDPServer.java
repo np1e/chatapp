@@ -34,7 +34,21 @@ class UDPServer implements Runnable
                 e.printStackTrace();
             }
             String sentence = new String(receivePacket.getData());
-            System.out.println("RECEIVED: " + sentence);
+            String sender = new String(String.valueOf(receivePacket.getAddress()));
+            String portst = new String(String.valueOf(receivePacket.getPort()));
+            System.out.println("received: " + sentence  + ", from: " + sender + ", port: " + portst);
+
+            InetAddress IPAddress = receivePacket.getAddress();
+            int port = receivePacket.getPort();
+            String capitalizedSentence = sentence.toUpperCase();
+            sendData = capitalizedSentence.getBytes();
+            DatagramPacket sendPacket =
+                    new DatagramPacket(sendData, sendData.length, IPAddress, port);
+            try {
+                serverSocket.send(sendPacket);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
         }
     }
