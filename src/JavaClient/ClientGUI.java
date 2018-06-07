@@ -2,10 +2,7 @@ package JavaClient;
 
 import javafx.application.Application;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.ListView;
-import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -21,6 +18,7 @@ public class ClientGUI extends Application{
     @Override
     public void start(Stage primaryStage) throws Exception {
 
+        // MainScene
         VBox leftBox = new VBox();
         ListView clientListView = new ListView();
         VBox.setVgrow(clientListView, Priority.ALWAYS);
@@ -44,13 +42,36 @@ public class ClientGUI extends Application{
         root.setLeft(leftBox);
         root.setCenter(rightBox);
 
+        Scene mainScene = new Scene(root, 800, 600);
 
+        //LoginScene
+        BorderPane loginRoot = new BorderPane();
+        VBox center = new VBox();
 
+        // Login
+        TextField userNameLog = new TextField();
+        TextField passWordLog = new PasswordField();
+        Button submitLog = new Button("Login");
+        submitLog.setOnAction(e->primaryStage.setScene(mainScene));
+        VBox login = new VBox();
+        login.getChildren().addAll(userNameLog, passWordLog, submitLog);
 
-        Scene scene = new Scene(root, 800, 600);
+        // Reg
+        TextField userNameReg = new TextField();
+        TextField emailReg = new TextField();
+        Button submitReg = new Button("Registrieren");
+        submitReg.setOnAction(e->primaryStage.setScene(mainScene));
+        VBox registration = new VBox();
+        registration.getChildren().addAll(userNameReg, emailReg, submitReg);
+
+        center.getChildren().addAll(login, registration);
+        loginRoot.setCenter(center);
+
+        Scene loginScene = new Scene(loginRoot, 200, 200);
+
 
         primaryStage.setTitle("JavaClient");
-        primaryStage.setScene(scene);
+        primaryStage.setScene(loginScene);
         primaryStage.show();
     }
 }
