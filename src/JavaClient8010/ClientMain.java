@@ -10,6 +10,8 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
+import java.net.InetAddress;
+
 public class ClientMain extends Application {
     private Client client;
 
