@@ -2,24 +2,33 @@ package JavaServer;
 import javafx.application.Application;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.MapChangeListener;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.ListView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 import java.io.*;
 import java.net.*;
+import java.util.Enumeration;
 
 public class ServerMain extends Application {
     private Server server;
     private TextField port;
     private TextArea logs;
+    private TextField commands;
+    private ListView<String> userList;
 
     @Override
     public void start(Stage primaryStage) throws Exception {
@@ -36,9 +45,14 @@ public class ServerMain extends Application {
         logs.setScrollTop(0);
 
         port = new TextField();
-        Button start = new Button("Start");
-
+        commands = new TextField();
+        Button start = new Button("Start Server");
+        Button stop = new Button("Stop Server");
         server = new Server();
+
+        userList = new ListView<String>();
+        userList.getItems().setAll(server.getActiveUsers().keySet());
+
         server.logsProperty().addListener(new ChangeListener<String>() {
             @Override
             public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
@@ -47,15 +61,44 @@ public class ServerMain extends Application {
             }
         });
 
+        server.getActiveUsers().addListener(new MapChangeListener<String, String>() {
+            @Override
+            public void onChanged(Change<? extends String, ? extends String> change) {
+                System.out.println("Change detected");
+
+            }
+        });
+
+        commands.setOnKeyPressed(new EventHandler<KeyEvent>() {
+            @Override
+            public void handle(KeyEvent event) {
+                if(event.getCode().equals(KeyCode.ENTER)) {
+                    server.doCommand(commands.getText());
+                }
+            }
+        });
+
         start.setOnMouseClicked(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent event) {
-                System.out.println("started");
                 server.start(port.getText());
             }
         });
 
-        center.getChildren().addAll(start, port, logs);
+        stop.setOnMouseClicked(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event) {
+                server.stop();
+            }
+        });
+
+        getIps();
+        VBox sideBar = new VBox();
+        VBox rightBar = new VBox();
+        rightBar.getChildren().addAll(logs, commands);
+        sideBar.getChildren().addAll(start, stop, port, userList);
+        VBox.setVgrow(logs, Priority.ALWAYS);
+        center.getChildren().addAll(sideBar, rightBar);
 
 
         primaryStage.setScene(scene);
@@ -67,5 +110,24 @@ public class ServerMain extends Application {
     public static void main(String[] args) {
         launch(args);
 
+    }
+
+    public void getIps() {
+        Enumeration e = null;
+        try {
+            e = NetworkInterface.getNetworkInterfaces();
+        } catch (SocketException e1) {
+            e1.printStackTrace();
+        }
+        while(e.hasMoreElements())
+        {
+            NetworkInterface n = (NetworkInterface) e.nextElement();
+            Enumeration ee = n.getInetAddresses();
+            while (ee.hasMoreElements())
+            {
+                InetAddress i = (InetAddress) ee.nextElement();
+                System.out.println(i.getHostAddress());
+            }
+        }
     }
 }

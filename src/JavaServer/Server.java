@@ -1,6 +1,10 @@
 package JavaServer;
 import com.google.gson.Gson;
+import com.sun.javafx.collections.ObservableMapWrapper;
+import com.sun.xml.internal.bind.v2.TODO;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableMap;
 import jdk.nashorn.internal.parser.JSONParser;
 
 import javax.json.Json;
@@ -13,8 +17,13 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
+import java.time.ZonedDateTime;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class Server {
 
@@ -22,19 +31,35 @@ public class Server {
     private PostgreSQLJDBC db;
     private SimpleStringProperty logs;
     private String port;
-    private Map<String, String> activeUsers;
+    private Map<String, String> activeUsers = new HashMap<String, String>();
+    private ObservableMap<String, String> activeUsersObservable;
+    private Data userData;
 
+
+    public ObservableMap<String, String> getActiveUsers() {
+        return activeUsersObservable;
+    }
+
+    ServerSocket welcomeSocket;
     public Server() {
 
+        userData = new Data();
         logs = new SimpleStringProperty();
-        db = new PostgreSQLJDBC();
+        //db = new PostgreSQLJDBC();
+        activeUsersObservable = FXCollections.observableMap(activeUsers);
+
+
+        for( int i = 0; i <4; i++) {
+            activeUsersObservable.put("user" + i, "127.0.0.1");
+
+        }
     }
 
     public void start(final String port) {
 
         try {
-            final ServerSocket welcomeSocket = new ServerSocket(Integer.parseInt(port));
-
+            welcomeSocket = new ServerSocket(Integer.parseInt(port));
+            setLogs("Server started on " + welcomeSocket.getInetAddress().getLocalHost().getHostAddress() + ":" + welcomeSocket.getLocalPort());
             while(true) {
                 try {
                     setLogs("Waiting for client...");
@@ -78,7 +103,7 @@ public class Server {
             case "login":
                 setLogs("requesting login");
                 if(checkAuthentication(request.get("username"), request.get("password"))) {
-                    activeUsers.put(request.get("username"), connectionSocket.getInetAddress().toString());
+                    activeUsersObservable.put(request.get("username"), connectionSocket.getInetAddress().toString());
                     sendActiveUserList(writer);
                 } else {
                     setLogs("Authentication failed.");
@@ -87,45 +112,27 @@ public class Server {
                 break;
             case "register":
                 setLogs("requesting register");
-                try {
-                    ResultSet user = db.getUser(request.get("username"));
-                    setLogs("User already exists.");
-                } catch (SQLException e) {
-                    if(request.get("password") != request.get("confirm")) {
+                if(!userData.exists(request.get("username"))) {
+                    if (request.get("password") != request.get("confirm")) {
                         setLogs("passwords must match");
                     } else {
-                        try {
-                            db.insert(request.get("username"), request.get("password"), connectionSocket.getInetAddress().toString());
-                        } catch (SQLException e1) {
-                            e1.printStackTrace();
-                        }
+                        userData.insert(request.get("username"), request.get("password"));
                     }
+
                 }
-
-
         }
 
     }
 
     private boolean checkAuthentication(String username, String password_hash) {
-        ResultSet user = null;
-        try {
-            user = db.getUser(username);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        String password = null;
-        try {
-            password = user.getString(2);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return password == password_hash;
+
+        return userData.getPW(username) == password_hash;
+
     }
 
     private void sendActiveUserList(BufferedWriter writer) {
         Gson gson = new Gson();
-        String json = gson.toJson(activeUsers);
+        String json = gson.toJson(activeUsersObservable);
         System.out.println("json = " + json);
         try {
             writer.write(json, 0, json.length());
@@ -137,7 +144,11 @@ public class Server {
 
 
     private void setLogs(String log) {
-        logs.set(log);
+        SimpleDateFormat curTime = new SimpleDateFormat("dd-MM-yyy HH:mm:ss.SSS");
+        Date now = new Date();
+        String timeStamp = curTime.format(now);
+        String string = "[" + timeStamp + "]" + "\n\t" + log;
+        logs.set(string);
     }
 
 
@@ -178,4 +189,19 @@ public class Server {
         return logs;
     }
 
+    public void stop() {
+        try {
+            welcomeSocket.close();
+            setLogs("Server closed");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**@TODO implement
+     *
+     * @param text
+     */
+    public void doCommand(String text) {
+    }
 }
