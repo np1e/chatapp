@@ -7,6 +7,7 @@ import com.sun.xml.internal.bind.v2.TODO;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.collections.ObservableMap;
 
 import java.io.*;
@@ -29,12 +30,11 @@ public class Server {
     private PostgreSQLJDBC db;
     private SimpleStringProperty logs;
     private String port;
-    private Map<String, String> activeUsers = new HashMap<String, String>();
-    private ObservableMap<String, String> activeUsersObservable;
+    private ObservableList<User> activeUsersObservable;
     private Data userData;
 
 
-    public ObservableMap<String, String> getActiveUsers() {
+    public ObservableList<User> getActiveUsers() {
         return activeUsersObservable;
     }
 
@@ -44,7 +44,7 @@ public class Server {
         userData = new Data();
         logs = new SimpleStringProperty();
         //db = new PostgreSQLJDBC();
-        activeUsersObservable = FXCollections.observableMap(activeUsers);
+        activeUsersObservable = FXCollections.observableArrayList();
 
     }
 
@@ -99,7 +99,7 @@ public class Server {
             case "login":
                 setLogs("requesting login");
                 if(checkAuthentication(username,password)) {
-                    activeUsersObservable.put(username, connectionSocket.getInetAddress().toString());
+                    activeUsersObservable.add(new User(username, connectionSocket.getInetAddress().getHostAddress()));
                     setLogs(username + " logged in successfully.");
                     sendActiveUserList(writer);
                 } else {
@@ -129,10 +129,14 @@ public class Server {
 
     private void sendActiveUserList(BufferedWriter writer) {
         Gson gson = new Gson();
-        String json = gson.toJson(activeUsersObservable);
+        Map<String,String> jsonMap = new HashMap<>();
+        jsonMap.put("method","data");
+        jsonMap.put("data",gson.toJson(activeUsersObservable));
+        String json = gson.toJson(jsonMap);
         System.out.println("json = " + json);
         try {
             writer.write(json, 0, json.length());
+            writer.flush();
         } catch (IOException e) {
             e.printStackTrace();
         }
