@@ -69,6 +69,7 @@ public class ServerMain extends Application {
             }
         });
 
+
         commands.setOnKeyPressed(new EventHandler<KeyEvent>() {
             @Override
             public void handle(KeyEvent event) {

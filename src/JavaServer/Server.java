@@ -1,16 +1,14 @@
 package JavaServer;
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.sun.javafx.collections.ObservableMapWrapper;
 import com.sun.xml.internal.bind.v2.TODO;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableMap;
-import jdk.nashorn.internal.parser.JSONParser;
 
-import javax.json.Json;
-import javax.json.JsonObject;
-import javax.json.JsonReader;
-import javax.json.stream.JsonParser;
 import java.io.*;
 import java.math.BigDecimal;
 import java.net.*;
@@ -48,11 +46,6 @@ public class Server {
         //db = new PostgreSQLJDBC();
         activeUsersObservable = FXCollections.observableMap(activeUsers);
 
-
-        for( int i = 0; i <4; i++) {
-            activeUsersObservable.put("user" + i, "127.0.0.1");
-
-        }
     }
 
     public void start(final String port) {
@@ -72,9 +65,9 @@ public class Server {
                             System.out.println("thread started");
                             final InputStream stream;
                             try {
-                                stream = connectionSocket.getInputStream();
+                                final BufferedReader reader = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
                                 final BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(connectionSocket.getOutputStream()));
-                                handleRequest(connectionSocket, stream, writer);
+                                handleRequest(connectionSocket, reader, writer);
                             } catch (IOException e) {
                                 setLogs(e.getMessage());
                             }
@@ -94,16 +87,20 @@ public class Server {
     }
 
     // handles the request from a client
-    private void handleRequest(Socket connectionSocket, InputStream stream, BufferedWriter writer) {
+    private void handleRequest(Socket connectionSocket, BufferedReader reader, BufferedWriter writer) {
 
-        Map<String, String> request = parseJson(stream);
+        com.google.gson.JsonObject request = parseJson(reader);
         System.out.println("Json parsed");
 
-        switch(request.get("method").toLowerCase()){
+        String username = request.get("username").getAsString();
+        String password = request.get("password").getAsString();
+
+        switch(request.get("method").getAsString()){
             case "login":
                 setLogs("requesting login");
-                if(checkAuthentication(request.get("username"), request.get("password"))) {
-                    activeUsersObservable.put(request.get("username"), connectionSocket.getInetAddress().toString());
+                if(checkAuthentication(username,password)) {
+                    activeUsersObservable.put(username, connectionSocket.getInetAddress().toString());
+                    setLogs(username + " logged in successfully.");
                     sendActiveUserList(writer);
                 } else {
                     setLogs("Authentication failed.");
@@ -112,11 +109,11 @@ public class Server {
                 break;
             case "register":
                 setLogs("requesting register");
-                if(!userData.exists(request.get("username"))) {
-                    if (request.get("password") != request.get("confirm")) {
+                if(!userData.exists(username)) {
+                    if (!password.equals(request.get("confirm").getAsString())) {
                         setLogs("passwords must match");
                     } else {
-                        userData.insert(request.get("username"), request.get("password"));
+                        userData.insert(username, password);
                     }
 
                 }
@@ -126,7 +123,7 @@ public class Server {
 
     private boolean checkAuthentication(String username, String password_hash) {
 
-        return userData.getPW(username) == password_hash;
+        return userData.getPW(username).equals(password_hash);
 
     }
 
@@ -152,32 +149,21 @@ public class Server {
     }
 
 
-    private Map parseJson(InputStream in) {
+    private JsonObject parseJson(BufferedReader reader) {
 
-        Map<String, String> data = new HashMap();
-
-        JsonParser parser = Json.createParser(in);
-        JsonParser.Event e = null;
-        while(e != JsonParser.Event.END_OBJECT) {
-            e = parser.next();
-            if(e == JsonParser.Event.KEY_NAME) {
-                switch(parser.getString()) {
-                    case "method":
-                        parser.next();
-                        data.put("method", parser.getString());
-                        break;
-                    case "username":
-                        parser.next();
-                        data.put("username", parser.getString());
-                        break;
-                    case "password":
-                        parser.next();
-                        data.put("password", parser.getString());
-                        break;
-                }
-            }
+        StringBuilder sb = new StringBuilder();
+        String jsonString = null;
+        try {
+            jsonString = reader.readLine();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        return data;
+        System.out.println(jsonString);
+        JsonParser parser = new com.google.gson.JsonParser();
+        JsonObject json = parser.parse(jsonString).getAsJsonObject();
+        System.out.println(json);
+        return json;
+
     }
 
 

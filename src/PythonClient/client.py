@@ -21,7 +21,8 @@ def register(username, password, confirm):
     data = {
         "method" : "register",
         "username" : username,
-        "password" : password
+        "password" : password,
+        "confirm": confirm
     }
     makeRequest(data)
 
