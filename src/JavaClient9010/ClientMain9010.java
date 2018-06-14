@@ -1,9 +1,9 @@
 package JavaClient9010;
+import JavaClient9010.Client;
 import javafx.application.Application;
 import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
-import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
@@ -30,7 +30,8 @@ public class ClientMain9010 extends Application {
         message.setPromptText("Deine Nachricht");
         Button submitSend = new Button("Absenden");
         VBox sendmessage = new VBox();
-        sendmessage.getChildren().addAll(title, message, submitSend);
+        Text messages = new Text();
+        sendmessage.getChildren().addAll(title, message, submitSend, messages);
 
         center.getChildren().addAll(sendmessage);
 
@@ -38,14 +39,12 @@ public class ClientMain9010 extends Application {
             @Override
             public void handle(MouseEvent event) {
                 try {
-                    client.sendmessage(message.getText(), "localhost", 8010);
+                    client.clientSend(message.getText(), "localhost", 8010);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
         });
-
-
 
         primaryStage.setScene(scene);
         primaryStage.setTitle("javaClient");

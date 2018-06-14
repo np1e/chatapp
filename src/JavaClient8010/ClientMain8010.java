@@ -40,7 +40,7 @@ public class ClientMain8010 extends Application {
             @Override
             public void handle(MouseEvent event) {
                 try {
-                    client.sendmessage(message.getText(), "localhost", 9010);
+                    client.clientSend(message.getText(), "localhost", 9010);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
