@@ -32,6 +32,7 @@ public class Server {
     private String port;
     private ObservableList<User> activeUsersObservable;
     private Data userData;
+    private Logger logger;
 
 
     public ObservableList<User> getActiveUsers() {
@@ -39,10 +40,11 @@ public class Server {
     }
 
     ServerSocket welcomeSocket;
-    public Server() {
+    public Server(Logger l) {
 
         userData = new Data();
         logs = new SimpleStringProperty();
+        logger = l;
         //db = new PostgreSQLJDBC();
         activeUsersObservable = FXCollections.observableArrayList();
 
@@ -53,6 +55,7 @@ public class Server {
         try {
             welcomeSocket = new ServerSocket(Integer.parseInt(port));
             setLogs("Server started on " + welcomeSocket.getInetAddress().getLocalHost().getHostAddress() + ":" + welcomeSocket.getLocalPort());
+
             while(true) {
                 try {
                     setLogs("Waiting for client...");
@@ -115,7 +118,6 @@ public class Server {
                     } else {
                         userData.insert(username, password);
                     }
-
                 }
         }
 
@@ -145,11 +147,7 @@ public class Server {
 
 
     private void setLogs(String log) {
-        SimpleDateFormat curTime = new SimpleDateFormat("dd-MM-yyy HH:mm:ss.SSS");
-        Date now = new Date();
-        String timeStamp = curTime.format(now);
-        String string = "[" + timeStamp + "]" + "\n\t" + log;
-        logs.set(string);
+        logger.log(log);
     }
 
 
@@ -167,7 +165,6 @@ public class Server {
         JsonObject json = parser.parse(jsonString).getAsJsonObject();
         System.out.println(json);
         return json;
-
     }
 
 
@@ -188,10 +185,5 @@ public class Server {
         }
     }
 
-    /**@TODO implement
-     *
-     * @param text
-     */
-    public void doCommand(String text) {
-    }
+
 }
