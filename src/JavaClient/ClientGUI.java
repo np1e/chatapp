@@ -1,15 +1,21 @@
 package JavaClient;
 
 import javafx.application.Application;
+import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
+import java.io.IOException;
+
 public class ClientGUI extends Application{
+
+    private Client client;
 
     public static void main (String[] args) {
         launch();
@@ -18,11 +24,19 @@ public class ClientGUI extends Application{
     @Override
     public void start(Stage primaryStage) throws Exception {
 
+        client = new Client();
+
         // MainScene
         VBox leftBox = new VBox();
-        ListView clientListView = new ListView();
+        ListView clientListView = new ListView(client.getUsers());
         VBox.setVgrow(clientListView, Priority.ALWAYS);
         leftBox.getChildren().add(clientListView);
+        clientListView.setOnMouseClicked(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event) {
+                client.sendChatRequest(clientListView.getSelectionModel().getSelectedItem()));
+            }
+        });
 
         VBox rightBox = new VBox();
         TextArea messageArea = new TextArea();
@@ -36,7 +50,6 @@ public class ClientGUI extends Application{
         sendMessageBox.getChildren().addAll(messageField, sendButton);
 
         rightBox.getChildren().addAll(messageArea, sendMessageBox);
-
 
         BorderPane root = new BorderPane();
         root.setLeft(leftBox);
@@ -52,7 +65,14 @@ public class ClientGUI extends Application{
         TextField userNameLog = new TextField();
         TextField passWordLog = new PasswordField();
         Button submitLog = new Button("Login");
-        submitLog.setOnAction(e->primaryStage.setScene(mainScene));
+        submitLog.setOnAction(e-> {
+            try {
+                client.login(userNameLog.getText(), passWordLog.getText());
+            } catch (IOException e1) {
+                e1.printStackTrace();
+            }
+            primaryStage.setScene(mainScene);
+        });
         VBox login = new VBox();
         login.getChildren().addAll(userNameLog, passWordLog, submitLog);
 
@@ -68,7 +88,6 @@ public class ClientGUI extends Application{
         loginRoot.setCenter(center);
 
         Scene loginScene = new Scene(loginRoot, 200, 200);
-
 
         primaryStage.setTitle("JavaClient");
         primaryStage.setScene(loginScene);
