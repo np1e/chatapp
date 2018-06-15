@@ -16,8 +16,10 @@ import java.util.Map;
 public class Client {
 
     private int receivePort;
+    private int serial;
 
     public Client() throws SocketException {
+        serial = 0;
         receivePort = 8010;
         new Thread(new clientReceive(receivePort)).start();
     }
@@ -28,10 +30,16 @@ public class Client {
         InetAddress IPAddress = InetAddress.getByName(goalIP);
 
         // Create timestamp
+        SimpleDateFormat curTime = new SimpleDateFormat("dd-MM-yyy HH:mm:ss");
+        Date now = new Date();
+        String timestamp = curTime.format(now);
 
         // Build messagePacket
         Map sendData = new HashMap();
+        sendData.put("method", "message");
         sendData.put("message", message);
+        sendData.put("timestamp", timestamp);
+        sendData.put("serial", serial++);
         Gson gson = new Gson();
         byte[] sendBytes = gson.toJson(sendData).getBytes();
 
@@ -64,7 +72,6 @@ public class Client {
 
             // Build
             byte[] receiveData = new byte[1024];
-            byte[] ackData;
 
             while(true) {
                 // Wait for message
@@ -72,21 +79,32 @@ public class Client {
                 try { serverSocket.receive(receivePacket); }
                 catch (IOException e) { e.printStackTrace(); }
 
-                // Received message
+                // Received packet
                 String jsonString = new String(receivePacket.getData(), 0, receivePacket.getLength());
-                com.google.gson.JsonParser parser = new com.google.gson.JsonParser();
+                JsonParser parser = new com.google.gson.JsonParser();
                 JsonObject json = parser.parse(jsonString).getAsJsonObject();
-                System.out.println("____________________");
-                System.out.println("message:"+ json.get("message"));
-                System.out.println("timestamp:"+ json.get("timestamp"));
                 String adress = new String(String.valueOf(receivePacket.getAddress()));
                 String port = new String(String.valueOf(receivePacket.getPort()));
 
-                // Build and send acknowledgment
+                // Received message
+                if(json.get("method").getAsString().equals("message")) {
+                    System.out.println("____________________");
+                    System.out.println("message:" + json.get("message"));
+                    System.out.println("timestamp:" + json.get("timestamp"));
+                    System.out.println("serial:" + json.get("serial"));
+                }
+
+                // Build ackPacket
+                Map ackData = new HashMap();
+                ackData.put("method", "ack");
+                ackData.put("serial", json.get("serial").toString().getBytes());
+                Gson gson = new Gson();
+                byte[] ackBytes = gson.toJson(ackData).getBytes();
+
+                // Send ackPacket
                 InetAddress goalIP = receivePacket.getAddress();
                 int goalPort = receivePacket.getPort();
-                ackData = jsonString.getBytes();
-                DatagramPacket sendPacket = new DatagramPacket(ackData, ackData.length, goalIP, goalPort);
+                DatagramPacket sendPacket = new DatagramPacket(ackBytes, ackBytes.length, goalIP, goalPort);
                 try { serverSocket.send(sendPacket); }
                 catch (IOException e) { e.printStackTrace(); }
             }
