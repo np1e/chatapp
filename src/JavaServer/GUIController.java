@@ -23,8 +23,9 @@ import java.io.*;
 import java.net.*;
 import java.util.Enumeration;
 
-public class ServerMain extends Application {
-    private Server server;
+public class GUIController extends Application {
+    private ServerController controller;
+    private Logger logger;
     private TextField port;
     private TextArea logs;
     private TextField commands;
@@ -38,6 +39,10 @@ public class ServerMain extends Application {
         root.setCenter(center);
         Scene scene =  new Scene(root, 800, 600);
 
+        logger = new Logger("gui");
+        controller = new ServerController(logger);
+        Server server = controller.getServer();
+
         logs = new TextArea();
         logs.setEditable(false);
         logs.setMouseTransparent(true);
@@ -48,11 +53,10 @@ public class ServerMain extends Application {
         commands = new TextField();
         Button start = new Button("Start Server");
         Button stop = new Button("Stop Server");
-        server = new Server();
 
-        userList = new ListView<User>(server.getActiveUsers());
+        userList = new ListView<User>(controller.getActiveUsers());
 
-        server.logsProperty().addListener(new ChangeListener<String>() {
+        logger.logProperty().addListener(new ChangeListener<String>() {
             @Override
             public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
                 System.out.println(newValue);
@@ -66,7 +70,7 @@ public class ServerMain extends Application {
             @Override
             public void handle(KeyEvent event) {
                 if(event.getCode().equals(KeyCode.ENTER)) {
-                    server.doCommand(commands.getText());
+                    controller.doCommand(commands.getText());
                 }
             }
         });
@@ -74,18 +78,17 @@ public class ServerMain extends Application {
         start.setOnMouseClicked(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent event) {
-                server.start(port.getText());
+                controller.startServer(port.getText());
             }
         });
 
         stop.setOnMouseClicked(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent event) {
-                server.stop();
+                controller.stopServer();
             }
         });
 
-        getIps();
         VBox sideBar = new VBox();
         VBox rightBar = new VBox();
         rightBar.getChildren().addAll(logs, commands);
@@ -102,25 +105,7 @@ public class ServerMain extends Application {
 
     public static void main(String[] args) {
         launch(args);
-
     }
 
-    public void getIps() {
-        Enumeration e = null;
-        try {
-            e = NetworkInterface.getNetworkInterfaces();
-        } catch (SocketException e1) {
-            e1.printStackTrace();
-        }
-        while(e.hasMoreElements())
-        {
-            NetworkInterface n = (NetworkInterface) e.nextElement();
-            Enumeration ee = n.getInetAddresses();
-            while (ee.hasMoreElements())
-            {
-                InetAddress i = (InetAddress) ee.nextElement();
-                System.out.println(i.getHostAddress());
-            }
-        }
-    }
+
 }
