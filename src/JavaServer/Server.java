@@ -129,10 +129,11 @@ public class Server {
 
     private void sendActiveUserList(BufferedWriter writer) {
         Gson gson = new Gson();
-        String json = gson.toJson(activeUsersObservable);
+        String json = gson.toJson(activeUsersObservable) + " \n";
         System.out.println("json = " + json);
         try {
             writer.write(json, 0, json.length());
+            writer.flush();
         } catch (IOException e) {
             e.printStackTrace();
         }
