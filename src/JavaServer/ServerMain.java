@@ -28,7 +28,7 @@ public class ServerMain extends Application {
     private TextField port;
     private TextArea logs;
     private TextField commands;
-    private ListView<String> userList;
+    private ListView<User> userList;
 
     @Override
     public void start(Stage primaryStage) throws Exception {
@@ -50,8 +50,7 @@ public class ServerMain extends Application {
         Button stop = new Button("Stop Server");
         server = new Server();
 
-        userList = new ListView<String>();
-        userList.getItems().setAll(server.getActiveUsers().keySet());
+        userList = new ListView<User>(server.getActiveUsers());
 
         server.logsProperty().addListener(new ChangeListener<String>() {
             @Override
@@ -61,13 +60,6 @@ public class ServerMain extends Application {
             }
         });
 
-        server.getActiveUsers().addListener(new MapChangeListener<String, String>() {
-            @Override
-            public void onChanged(Change<? extends String, ? extends String> change) {
-                System.out.println("Change detected");
-
-            }
-        });
 
 
         commands.setOnKeyPressed(new EventHandler<KeyEvent>() {
