@@ -16,13 +16,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.time.ZonedDateTime;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
-public class Server {
+public class Server extends Observable {
 
 
     private PostgreSQLJDBC db;
@@ -31,6 +28,7 @@ public class Server {
     private ObservableList<User> activeUsersObservable;
     private Data userData;
     private Logger logger;
+    private TCPClient client;
 
 
     public ObservableList<User> getActiveUsers() {
@@ -38,54 +36,48 @@ public class Server {
     }
 
     ServerSocket welcomeSocket;
-    public Server(Logger l) {
+    public Server(Logger l, ObservableList list, TCPClient client) {
 
+        this.client = client;
         userData = new Data();
         logs = new SimpleStringProperty();
         logger = l;
         //db = new PostgreSQLJDBC();
-        activeUsersObservable = FXCollections.observableArrayList();
+        activeUsersObservable = list;
 
     }
 
     public void start(final String port) {
 
         try {
-            welcomeSocket = new ServerSocket(Integer.parseInt(port));
+            welcomeSocket = new ServerSocket(8080);
             setLogs("Server started on " + welcomeSocket.getInetAddress().getLocalHost().getHostAddress() + ":" + welcomeSocket.getLocalPort());
 
             while(true) {
-                final Thread acceptThread = new Thread(new Runnable() {
+                try {
+                    setLogs("Waiting for client...");
+                    final Socket connectionSocket = welcomeSocket.accept();
+                    setLogs("Client connected.");
 
-                    @Override
-                    public void run() {
-                        try {
-                            setLogs("Waiting for client...");
-                            final Socket connectionSocket = welcomeSocket.accept();
-                            setLogs("Client connected.");
-
-                            final Thread thread = new Thread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    System.out.println("thread started");
-                                    final InputStream stream;
-                                    try {
-                                        final BufferedReader reader = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
-                                        final BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(connectionSocket.getOutputStream()));
-                                        handleRequest(connectionSocket, reader, writer);
-                                    } catch (IOException e) {
-                                        setLogs(e.getMessage());
-                                    }
-                                }
-                            });
-
-                            thread.start();
-                        } catch (IOException e) {
-                            setLogs(e.getMessage());
+                    final Thread thread = new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            System.out.println("thread started");
+                            final InputStream stream;
+                            try {
+                                final BufferedReader reader = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
+                                final BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(connectionSocket.getOutputStream()));
+                                handleRequest(connectionSocket, reader, writer);
+                            } catch (IOException e) {
+                                setLogs(e.getMessage());
+                            }
                         }
-                    }
-                });
+                    });
 
+                    thread.start();
+                } catch (IOException e) {
+                    setLogs(e.getMessage());
+                }
             }
 
         } catch (IOException e) {
@@ -97,17 +89,18 @@ public class Server {
     // handles the request from a client
     private void handleRequest(Socket connectionSocket, BufferedReader reader, BufferedWriter writer) {
 
-        com.google.gson.JsonObject request = parseJson(reader);
+        JsonObject request = parseJson(reader);
         System.out.println("Json parsed");
 
         String username = request.get("username").getAsString();
         String password = request.get("password").getAsString();
+        String port = request.get("tcpport").getAsString();
 
         switch(request.get("method").getAsString()){
             case "login":
                 setLogs("requesting login");
                 if(checkAuthentication(username,password)) {
-                    activeUsersObservable.add(new User(username, connectionSocket.getInetAddress().getHostAddress()));
+                    activeUsersObservable.add(new User(username, connectionSocket.getInetAddress().getHostAddress(), Integer.parseInt(port)));
                     setLogs(username + " logged in successfully.");
                     sendActiveUserList(writer);
                 } else {
@@ -152,17 +145,24 @@ public class Server {
 
         String jsonString = gson.toJson(json);
         System.out.println("json = " + jsonString);
-        jsonString = addTerminator(jsonString);
+        sendMessage(jsonString, writer);
+
+    }
+
+
+    private void sendToAll(String jsonString) {
+        client.sendToAll(jsonString);
+    }
+
+    private void sendMessage(String jsonString, BufferedWriter writer) {
+        jsonString += "\n";
         try {
             writer.write(jsonString, 0, jsonString.length());
             writer.flush();
+            sendToAll(jsonString);
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    private String addTerminator(String message) {
-        return message + "\n";
     }
 
 

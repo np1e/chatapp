@@ -1,17 +1,14 @@
 package JavaClient;
 
 import com.google.gson.*;
-import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
 import java.io.*;
-import java.net.DatagramPacket;
 import java.net.Socket;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 public class Client {
 
@@ -19,18 +16,19 @@ public class Client {
     private Socket socket;
     private BufferedWriter writer;
     private BufferedReader reader;
-    private int listenOnPort;
+    private String portUDP;
+    private String portTCP;
     private int serial;
 
 
-    public Client(String port) throws IOException {
-        activeusers = FXCollections.observableArrayList();
+    public Client(String portUDP, String portTCP, ObservableList activeUsers) throws IOException {
+        activeusers = activeUsers;
         // TCP
         socket = new Socket("localhost", 8080);
         writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
         reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         // UDP
-        listenOnPort = Integer.parseInt(port);
+        portUDP = portUDP;
         serial = 0;
 
     }
@@ -43,6 +41,7 @@ public class Client {
         loginData.put("method", "login");
         loginData.put("username", username);
         loginData.put("password", password);
+        loginData.put("tcpport", portTCP);
         Gson gson = new Gson();
         String loginString = gson.toJson(loginData);
         String response = sendText(loginString);

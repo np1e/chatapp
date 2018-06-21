@@ -1,6 +1,8 @@
 package JavaClient;
 
 import javafx.application.Application;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -16,21 +18,36 @@ import java.io.IOException;
 public class ClientGUI extends Application{
 
     private Client client;
-    private static String listenOnPort;
+    private static String portUDP;
+    private static String portTCP;
+    private Server server;
+    private ObservableList<User> activeusers;
 
     public static void main (String[] args) {
-        listenOnPort = args[0];
+        portUDP = args[0];
+        portTCP = args[1];
         launch();
     }
 
     @Override
     public void start(Stage primaryStage) throws Exception {
 
-        client = new Client(listenOnPort);
+        activeusers = FXCollections.observableArrayList();
+        client = new Client(portUDP, portTCP, activeusers);
+        server = new Server(portTCP, activeusers);
+
+        final Thread serverThread = new Thread(new Runnable() {
+
+            @Override
+            public void run() {
+                server.start();
+            }
+        });
+        serverThread.start();
 
         // MainScene
         VBox leftBox = new VBox();
-        ListView clientListView = new ListView(client.getUsers());
+        ListView clientListView = new ListView(activeusers);
         VBox.setVgrow(clientListView, Priority.ALWAYS);
         leftBox.getChildren().add(clientListView);
         clientListView.setOnMouseClicked(new EventHandler<MouseEvent>() {

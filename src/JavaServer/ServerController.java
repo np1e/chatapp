@@ -2,6 +2,7 @@ package JavaServer;
 
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
 import java.net.InetAddress;
@@ -12,11 +13,15 @@ import java.util.Enumeration;
 public class ServerController {
 
     private Server server;
+    private TCPClient client;
     private Logger logger;
+    private ObservableList<User> activeUsersObservable;
 
     public ServerController(Logger logger) {
         this.logger = logger;
-        server = new Server(logger);
+        activeUsersObservable = FXCollections.observableArrayList();
+        client = new TCPClient(activeUsersObservable);
+        server = new Server(logger, activeUsersObservable, client);
 
         server.logsProperty().addListener(new ChangeListener<String>() {
             @Override
