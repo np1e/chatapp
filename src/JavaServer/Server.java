@@ -19,7 +19,7 @@ import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class Server extends Observable {
+public class Server {
 
 
     private PostgreSQLJDBC db;
@@ -163,6 +163,10 @@ public class Server extends Observable {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private String addTerminator(String message) {
+        return message + "\n";
     }
 
 
