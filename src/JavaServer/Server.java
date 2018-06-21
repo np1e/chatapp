@@ -55,10 +55,6 @@ public class Server {
             setLogs("Server started on " + welcomeSocket.getInetAddress().getLocalHost().getHostAddress() + ":" + welcomeSocket.getLocalPort());
 
             while(true) {
-                final Thread acceptThread = new Thread(new Runnable() {
-
-                    @Override
-                    public void run() {
                         try {
                             setLogs("Waiting for client...");
                             final Socket connectionSocket = welcomeSocket.accept();
@@ -84,10 +80,6 @@ public class Server {
                             setLogs(e.getMessage());
                         }
                     }
-                });
-
-            }
-
         } catch (IOException e) {
             setLogs(e.getMessage());
         }
