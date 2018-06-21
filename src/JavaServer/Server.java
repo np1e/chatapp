@@ -57,30 +57,37 @@ public class Server {
             setLogs("Server started on " + welcomeSocket.getInetAddress().getLocalHost().getHostAddress() + ":" + welcomeSocket.getLocalPort());
 
             while(true) {
-                try {
-                    setLogs("Waiting for client...");
-                    final Socket connectionSocket = welcomeSocket.accept();
-                    setLogs("Client connected.");
+                final Thread acceptThread = new Thread(new Runnable() {
 
-                    final Thread thread = new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            System.out.println("thread started");
-                            final InputStream stream;
-                            try {
-                                final BufferedReader reader = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
-                                final BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(connectionSocket.getOutputStream()));
-                                handleRequest(connectionSocket, reader, writer);
-                            } catch (IOException e) {
-                                setLogs(e.getMessage());
-                            }
+                    @Override
+                    public void run() {
+                        try {
+                            setLogs("Waiting for client...");
+                            final Socket connectionSocket = welcomeSocket.accept();
+                            setLogs("Client connected.");
+
+                            final Thread thread = new Thread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    System.out.println("thread started");
+                                    final InputStream stream;
+                                    try {
+                                        final BufferedReader reader = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
+                                        final BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(connectionSocket.getOutputStream()));
+                                        handleRequest(connectionSocket, reader, writer);
+                                    } catch (IOException e) {
+                                        setLogs(e.getMessage());
+                                    }
+                                }
+                            });
+
+                            thread.start();
+                        } catch (IOException e) {
+                            setLogs(e.getMessage());
                         }
-                    });
+                    }
+                });
 
-                    thread.start();
-                } catch (IOException e) {
-                    setLogs(e.getMessage());
-                }
             }
 
         } catch (IOException e) {
