@@ -1,6 +1,8 @@
 package JavaClient;
 
 import com.google.gson.*;
+import javafx.application.Platform;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.ObservableList;
 
 import java.io.*;
@@ -20,10 +22,14 @@ public class Client {
     private int portUDP;
     private int portTCP;
     private int serial;
+    private User activeuser;
+    private SimpleStringProperty username;
 
 
     public Client(String portUDP, String portTCP, ObservableList activeUsers) throws IOException {
+        username = new SimpleStringProperty();
         activeusers = activeUsers;
+        activeuser = new User("Bot", "none");
         // TCP
         this.portTCP = Integer.parseInt(portTCP);
         socket = new Socket("127.0.1.1", 8080);
@@ -38,7 +44,11 @@ public class Client {
     }
 
     public ObservableList getActiveChat() {
-        return null;
+        return activeuser.getChat();
+    }
+
+    public SimpleStringProperty getUsername() {
+        return username;
     }
 
     public class udpReceive implements Runnable {
@@ -78,6 +88,23 @@ public class Client {
                 // Received request
                 if(json.get("method").getAsString().equals("request")) {
                     System.out.println("UDP CHAT REQUEST RECEIVED / serial: " + json.get("serial"));
+
+                    Platform.runLater(new Runnable() {
+                        @Override
+                        public void run() {
+                            for(User u : activeusers) {
+                                System.out.println(u.toString());
+                                System.out.println(json.get("username"));
+                                if(u.toString().equals(json.get("username").toString().replace("\"", ""))) {
+                                    u.getChat().add(new Message("Du hast eine Chat-Anfrage erhalten", getTimestamp()));
+                                    activeuser = u;
+                                    System.out.println("active user set");
+                                }
+                            }
+                           //System.out.println("Du hast eine Chat-Anfrage von "+json.get("username").toString()+" erhalten");
+                        }
+                    });
+
                     serial = json.get("serial").getAsInt();
                     send_ack();
                 }
@@ -108,6 +135,7 @@ public class Client {
 
     public void login(String username, String password) throws IOException {
         // Request login at server
+        this.username.set(username);
         Map<String, String> loginData = new HashMap();
         loginData.put("method", "login");
         loginData.put("username", username);
@@ -159,15 +187,6 @@ public class Client {
         socket.close();
     }
 
-    public User getUserByUsername(String username) {
-        User user = null;
-        for(User u : activeusers) {
-            if(u.toString() == username) {
-                user = u;
-            }
-        }
-        return user;
-    }
 
     public String getTimestamp() {
         SimpleDateFormat curTime = new SimpleDateFormat("dd-MM-yyy HH:mm:ss");
@@ -176,15 +195,11 @@ public class Client {
     }
 
     public void sendChatRequest(String username) throws Exception {
-        User user = getUserByUsername(username);
-        String timestamp = getTimestamp();
-        user.getChat().add(new Message("Du hast eine Chat-Anfrage erhalten", getTimestamp()));
-
         // Build messageMap
         Map messageMap = new HashMap();
         messageMap.put("method", "request");
         messageMap.put("username", username);
-        messageMap.put("timestamp", timestamp);
+        messageMap.put("timestamp", getTimestamp());
         messageMap.put("serial", ++serial);
         Gson gson = new Gson();
         byte[] messageBytes = gson.toJson(messageMap).getBytes();

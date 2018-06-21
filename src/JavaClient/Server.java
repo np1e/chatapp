@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import javafx.application.Platform;
 import javafx.collections.ObservableList;
 
 import java.io.*;
@@ -68,8 +69,10 @@ public class Server {
             JsonObject user = j.getAsJsonObject();
             users.add(new User(user.get("username").getAsString(), user.get("ip").getAsString()));
         }
-        activeUsers.removeAll();
-        activeUsers.addAll(users);
+        Platform.runLater(() -> {
+            activeUsers.removeAll();
+            activeUsers.addAll(users);
+        });
 
     }
 

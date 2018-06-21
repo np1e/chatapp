@@ -1,7 +1,11 @@
 package JavaClient;
 
 import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
 import javafx.scene.Scene;
@@ -32,6 +36,8 @@ public class ClientGUI extends Application{
     @Override
     public void start(Stage primaryStage) throws Exception {
 
+        Platform.setImplicitExit(false);
+
         activeusers = FXCollections.observableArrayList();
         client = new Client(portUDP, portTCP, activeusers);
         server = new Server(portTCP, activeusers);
@@ -49,7 +55,14 @@ public class ClientGUI extends Application{
         VBox leftBox = new VBox();
         ListView clientListView = new ListView(activeusers);
         VBox.setVgrow(clientListView, Priority.ALWAYS);
-        leftBox.getChildren().add(clientListView);
+        Label username = new Label("");
+        leftBox.getChildren().addAll(clientListView, username);
+        client.getUsername().addListener(new ChangeListener<String>() {
+            @Override
+            public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
+                username.setText(newValue);
+            }
+        });
         clientListView.setOnMouseClicked(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent event) {
@@ -63,6 +76,12 @@ public class ClientGUI extends Application{
 
         VBox rightBox = new VBox();
         ListView messageArea = new ListView(client.getActiveChat());
+        client.getActiveChat().addListener(new ListChangeListener() {
+            @Override
+            public void onChanged(Change c) {
+                System.out.println("changed!!!!");
+            }
+        });
         VBox.setVgrow(messageArea, Priority.ALWAYS);
 
         HBox sendMessageBox = new HBox();

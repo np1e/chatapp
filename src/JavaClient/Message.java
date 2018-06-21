@@ -9,4 +9,12 @@ public class Message {
         this.message = message;
         this.timestamp = timestamp;
     }
+
+    public String getMessage(){
+        return message;
+    }
+
+    public String toString() {
+        return message;
+    }
 }
