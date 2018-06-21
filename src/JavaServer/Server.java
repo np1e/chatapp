@@ -1,7 +1,5 @@
 package JavaServer;
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.*;
 import com.sun.javafx.collections.ObservableMapWrapper;
 import com.sun.xml.internal.bind.v2.TODO;
 import javafx.application.Platform;
@@ -139,16 +137,32 @@ public class Server {
     private void sendActiveUserList(BufferedWriter writer) {
         Gson gson = new Gson();
         Map<String,String> jsonMap = new HashMap<>();
-        jsonMap.put("method","data");
-        jsonMap.put("data",gson.toJson(activeUsersObservable));
-        String json = gson.toJson(jsonMap);
-        System.out.println("json = " + json);
+        JsonArray users = new JsonArray();
+        JsonObject json = new JsonObject();
+        json.addProperty("method","data");
+        for(User u : activeUsersObservable) {
+            JsonObject user = new JsonObject();
+            user.addProperty("username", u.toString());
+            user.addProperty("ip", u.getIp());
+            users.add(user);
+        }
+
+        System.out.println(users);
+        json.add("data",users);
+
+        String jsonString = gson.toJson(json);
+        System.out.println("json = " + jsonString);
+        jsonString = addTerminator(jsonString);
         try {
-            writer.write(json, 0, json.length());
+            writer.write(jsonString, 0, jsonString.length());
             writer.flush();
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private String addTerminator(String message) {
+        return message + "\n";
     }
 
 

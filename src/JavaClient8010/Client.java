@@ -24,21 +24,24 @@ public class Client {
         new Thread(new clientReceive(receivePort)).start();
     }
 
+    public String makeTimestamp() {
+        // Create timestamp
+        SimpleDateFormat curTime = new SimpleDateFormat("dd-MM-yyy HH:mm:ss");
+        Date now = new Date();
+        String timestamp = curTime.format(now);
+        return timestamp;
+    }
+
     public void clientSend(String message, String goalIP, int goalPort) throws Exception {
         // Build datagram, goalIP
         DatagramSocket clientSendSocket = new DatagramSocket();
         InetAddress IPAddress = InetAddress.getByName(goalIP);
 
-        // Create timestamp
-        SimpleDateFormat curTime = new SimpleDateFormat("dd-MM-yyy HH:mm:ss");
-        Date now = new Date();
-        String timestamp = curTime.format(now);
-
         // Build messagePacket
         Map sendData = new HashMap();
         sendData.put("method", "message");
         sendData.put("message", message);
-        sendData.put("timestamp", timestamp);
+        sendData.put("timestamp", makeTimestamp());
         sendData.put("serial", serial++);
         Gson gson = new Gson();
         byte[] sendBytes = gson.toJson(sendData).getBytes();

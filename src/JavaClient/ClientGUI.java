@@ -16,15 +16,17 @@ import java.io.IOException;
 public class ClientGUI extends Application{
 
     private Client client;
+    private static String listenOnPort;
 
     public static void main (String[] args) {
+        listenOnPort = args[0];
         launch();
     }
 
     @Override
     public void start(Stage primaryStage) throws Exception {
 
-        client = new Client();
+        client = new Client(listenOnPort);
 
         // MainScene
         VBox leftBox = new VBox();
@@ -34,7 +36,7 @@ public class ClientGUI extends Application{
         clientListView.setOnMouseClicked(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent event) {
-                client.sendChatRequest(clientListView.getSelectionModel().getSelectedItem()));
+                client.sendChatRequest(clientListView.getSelectionModel().getSelectedItem().toString());
             }
         });
 
