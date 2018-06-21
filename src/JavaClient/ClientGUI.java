@@ -45,8 +45,7 @@ public class ClientGUI extends Application{
         });
 
         VBox rightBox = new VBox();
-        TextArea messageArea = new TextArea();
-        messageArea.setEditable(false);
+        ListView messageArea = new ListView(client.getActiveChat());
         VBox.setVgrow(messageArea, Priority.ALWAYS);
 
         HBox sendMessageBox = new HBox();

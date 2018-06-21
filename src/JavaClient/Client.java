@@ -15,7 +15,6 @@ import java.util.Set;
 public class Client {
 
     private ObservableList<User> activeusers;
-    private ObservableList<Chat> activechats;
     private Socket socket;
     private BufferedWriter writer;
     private BufferedReader reader;
@@ -25,7 +24,6 @@ public class Client {
 
     public Client(String port) throws IOException {
         activeusers = FXCollections.observableArrayList();
-        activechats = FXCollections.observableArrayList();
         // TCP
         socket = new Socket("127.0.1.1", 8080);
         writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
@@ -35,6 +33,9 @@ public class Client {
         serial = 0;
         new Thread(new Client.udpReceive(listenOnPort)).start();
 
+    }
+
+    public ObservableList getActiveChat() {
     }
 
     public class udpReceive implements Runnable {
@@ -168,14 +169,14 @@ public class Client {
     public void sendChatRequest(String username) throws Exception {
         User user = getUserByUsername(username);
         String timestamp = getTimestamp();
-        activechats.add(new Chat(user));
+        user.getChat().add(new Message("Du hast eine Chat-Anfrage erhalten", getTimestamp()));
 
         // Build messageMap
         Map messageMap = new HashMap();
         messageMap.put("method", "request");
         messageMap.put("username", username);
         messageMap.put("timestamp", timestamp);
-        messageMap.put("serial", serial++);
+        messageMap.put("serial", ++serial);
         Gson gson = new Gson();
         byte[] messageBytes = gson.toJson(messageMap).getBytes();
 
