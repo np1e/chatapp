@@ -6,6 +6,7 @@ import javafx.collections.ObservableList;
 import java.io.*;
 import java.net.*;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -16,25 +17,28 @@ public class Client {
     private Socket socket;
     private BufferedWriter writer;
     private BufferedReader reader;
-    private String portUDP;
-    private String portTCP;
+    private int portUDP;
+    private int portTCP;
     private int serial;
 
 
     public Client(String portUDP, String portTCP, ObservableList activeUsers) throws IOException {
         activeusers = activeUsers;
         // TCP
+        this.portTCP = Integer.parseInt(portTCP);
         socket = new Socket("127.0.1.1", 8080);
         writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
         reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         // UDP
-        portUDP = portUDP;
+        this.portUDP = Integer.parseInt(portUDP);
+
         serial = 0;
-        new Thread(new Client.udpReceive(listenOnPort)).start();
+        new Thread(new Client.udpReceive(Integer.parseInt(portUDP))).start();
 
     }
 
     public ObservableList getActiveChat() {
+        return null;
     }
 
     public class udpReceive implements Runnable {
@@ -108,7 +112,8 @@ public class Client {
         loginData.put("method", "login");
         loginData.put("username", username);
         loginData.put("password", password);
-        loginData.put("tcpport", portTCP);
+        loginData.put("tcpport", String.valueOf(portTCP));
+        loginData.put("udpport", String.valueOf(portUDP));
         Gson gson = new Gson();
         String loginString = gson.toJson(loginData);
         String response = sendText(loginString);
@@ -121,10 +126,13 @@ public class Client {
         JsonObject json = parseJson(response);
         JsonArray data = json.getAsJsonArray("data");
         System.out.println(data);
+        ArrayList<User> users = new ArrayList();
         for(JsonElement j: data) {
             JsonObject user = j.getAsJsonObject();
-            activeusers.add(new User(user.get("username").getAsString(), user.get("ip").getAsString()));
+            users.add(new User(user.get("username").getAsString(), user.get("ip").getAsString()));
         }
+        activeusers.removeAll();
+        activeusers.addAll(users);
         System.out.println(activeusers);
     }
 
@@ -187,7 +195,7 @@ public class Client {
 
     public void udp_send(byte[] messageBytes) throws Exception {
         int goalPort;
-        if(listenOnPort == 8010) { goalPort = 9010;}
+        if(portUDP == 8010) { goalPort = 9010;}
         else { goalPort = 8010; }
 
         // Build datagram, goalIP

@@ -9,6 +9,7 @@ import javafx.collections.ObservableList;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 
 public class Server {
 
@@ -62,10 +63,14 @@ public class Server {
         JsonObject json = parseJson(reader);
         JsonArray data = json.getAsJsonArray("data");
         System.out.println(data);
+        ArrayList<User> users = new ArrayList();
         for (JsonElement j : data) {
             JsonObject user = j.getAsJsonObject();
-            activeUsers.add(new User(user.get("username").getAsString(), user.get("ip").getAsString()));
+            users.add(new User(user.get("username").getAsString(), user.get("ip").getAsString()));
         }
+        activeUsers.removeAll();
+        activeUsers.addAll(users);
+
     }
 
     private JsonObject parseJson(BufferedReader reader) {
