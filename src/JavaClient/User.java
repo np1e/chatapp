@@ -7,7 +7,7 @@ public class User {
 
     private String username;
     private String ip;
-    private ObservableList<Message> chat;
+    public ObservableList<Message> chat;
 
     public User(Object username, Object ip) {
         this.username = username.toString();

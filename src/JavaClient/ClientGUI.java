@@ -2,6 +2,7 @@ package JavaClient;
 
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -26,6 +27,7 @@ public class ClientGUI extends Application{
     private static String portTCP;
     private Server server;
     private ObservableList<User> activeusers;
+    private ObservableList<Message> activechat;
 
     public static void main (String[] args) {
         portUDP = args[0];
@@ -39,7 +41,8 @@ public class ClientGUI extends Application{
         Platform.setImplicitExit(false);
 
         activeusers = FXCollections.observableArrayList();
-        client = new Client(portUDP, portTCP, activeusers);
+        activechat = FXCollections.observableArrayList();
+        client = new Client(portUDP, portTCP, activeusers, activechat);
         server = new Server(portTCP, activeusers);
 
         final Thread serverThread = new Thread(new Runnable() {
@@ -78,11 +81,11 @@ public class ClientGUI extends Application{
         });
 
         VBox rightBox = new VBox();
-        ListView messageArea = new ListView(client.getActiveChat());
-        client.getActiveChat().addListener(new ListChangeListener() {
+        ListView messageArea = new ListView(activechat);
+        activechat.addListener(new ListChangeListener<Message>() {
             @Override
-            public void onChanged(Change c) {
-                System.out.println("changed!!!!");
+            public void onChanged(Change<? extends Message> c) {
+                System.out.println("changed!");
             }
         });
         VBox.setVgrow(messageArea, Priority.ALWAYS);
@@ -100,7 +103,7 @@ public class ClientGUI extends Application{
         root.setLeft(leftBox);
         root.setCenter(rightBox);
 
-        Scene mainScene = new Scene(root, 800, 600);
+        Scene mainScene = new Scene(root, 300, 300);
 
 
         //LoginScene
@@ -148,7 +151,7 @@ public class ClientGUI extends Application{
             }
         });
 
-        primaryStage.setTitle("JavaClient");
+        primaryStage.setTitle(portUDP);
         primaryStage.setScene(loginScene);
         primaryStage.show();
         primaryStage.setOnHidden(event -> {
