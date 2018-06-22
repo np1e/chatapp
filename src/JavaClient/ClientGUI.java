@@ -56,7 +56,10 @@ public class ClientGUI extends Application{
         ListView clientListView = new ListView(activeusers);
         VBox.setVgrow(clientListView, Priority.ALWAYS);
         Label username = new Label("");
-        leftBox.getChildren().addAll(clientListView, username);
+        Button logout = new Button("Logout");
+        leftBox.getChildren().addAll(clientListView, username, logout);
+
+
         client.getUsername().addListener(new ChangeListener<String>() {
             @Override
             public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
@@ -87,6 +90,7 @@ public class ClientGUI extends Application{
         HBox sendMessageBox = new HBox();
         TextField messageField = new TextField();
         Button sendButton = new Button("Send");
+
         HBox.setHgrow(messageField, Priority.ALWAYS);
         sendMessageBox.getChildren().addAll(messageField, sendButton);
 
@@ -97,6 +101,7 @@ public class ClientGUI extends Application{
         root.setCenter(rightBox);
 
         Scene mainScene = new Scene(root, 800, 600);
+
 
         //LoginScene
         BorderPane loginRoot = new BorderPane();
@@ -129,6 +134,19 @@ public class ClientGUI extends Application{
         loginRoot.setCenter(center);
 
         Scene loginScene = new Scene(loginRoot, 200, 200);
+
+        logout.setOnMouseClicked(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event) {
+                try {
+                    System.out.println("logout requested");
+                    client.logout();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                primaryStage.setScene(loginScene);
+            }
+        });
 
         primaryStage.setTitle("JavaClient");
         primaryStage.setScene(loginScene);

@@ -21,7 +21,7 @@ public class TCPClient {
             try {
                 clientSocket = new Socket(user.getIp(), user.getPort());
                 DataOutputStream outToUser = new DataOutputStream(clientSocket.getOutputStream());
-                outToUser.writeBytes(jsonString);
+                outToUser.writeBytes(jsonString + "\n");
                 clientSocket.close();
             } catch (IOException e) {
                 e.printStackTrace();

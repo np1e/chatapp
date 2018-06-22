@@ -51,6 +51,17 @@ public class Client {
         return username;
     }
 
+    public void logout() throws IOException {
+        JsonObject json = new JsonObject();
+        json.addProperty("method", "logout");
+        json.addProperty("username", this.username.getValue());
+        Gson gson = new Gson();
+        String jsonString = gson.toJson(json);
+        System.out.println(jsonString);
+        String response = sendText(jsonString);
+        System.out.println(response);
+    }
+
     public class udpReceive implements Runnable {
         private int listenOnPort;
         public udpReceive(int port) {
@@ -146,7 +157,7 @@ public class Client {
         String loginString = gson.toJson(loginData);
         String response = sendText(loginString);
         System.out.println(response);
-        loadList(response);
+        //loadList(response);
 
     }
 

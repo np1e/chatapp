@@ -66,12 +66,14 @@ public class Server {
         System.out.println(data);
         ArrayList<User> users = new ArrayList();
         for (JsonElement j : data) {
+            System.out.println("User: " + j);
             JsonObject user = j.getAsJsonObject();
             users.add(new User(user.get("username").getAsString(), user.get("ip").getAsString()));
         }
         Platform.runLater(() -> {
-            activeUsers.removeAll();
+            activeUsers.clear();
             activeUsers.addAll(users);
+            System.out.println("Updated list");
         });
 
     }
@@ -85,10 +87,8 @@ public class Server {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        System.out.println(jsonString);
         JsonParser parser = new com.google.gson.JsonParser();
         JsonObject json = parser.parse(jsonString).getAsJsonObject();
-        System.out.println(json);
         return json;
 
     }
