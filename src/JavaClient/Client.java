@@ -62,6 +62,13 @@ public class Client {
         System.out.println(response);
     }
 
+    public void exit() throws IOException {
+        System.out.println("EXIT");
+        logout();
+        Platform.exit();
+        System.exit(0);
+    }
+
     public class udpReceive implements Runnable {
         private int listenOnPort;
         public udpReceive(int port) {
@@ -98,24 +105,15 @@ public class Client {
                 }
                 // Received request
                 if(json.get("method").getAsString().equals("request")) {
-                    System.out.println("UDP CHAT REQUEST RECEIVED / serial: " + json.get("serial"));
-
-                    Platform.runLater(new Runnable() {
-                        @Override
-                        public void run() {
-                            for(User u : activeusers) {
-                                System.out.println(u.toString());
-                                System.out.println(json.get("username"));
-                                if(u.toString().equals(json.get("username").toString().replace("\"", ""))) {
-                                    u.getChat().add(new Message("Du hast eine Chat-Anfrage erhalten", getTimestamp()));
-                                    activeuser = u;
-                                    System.out.println("active user set");
-                                }
-                            }
-                           //System.out.println("Du hast eine Chat-Anfrage von "+json.get("username").toString()+" erhalten");
+                    for(User u : activeusers) {
+                        if (u.toString().equals(json.get("username").toString().replace("\"", ""))) {
+                            System.out.println("UDP CHAT REQUEST RECEIVED from " + json.get("username") + " / serial: " + json.get("serial"));
+                            Platform.runLater(()->
+                                    u.getChat().add("Du hast eine Anfrage erhalten!")
+                            );
+                            activeuser = u;
                         }
-                    });
-
+                    }
                     serial = json.get("serial").getAsInt();
                     send_ack();
                 }
@@ -209,7 +207,7 @@ public class Client {
         // Build messageMap
         Map messageMap = new HashMap();
         messageMap.put("method", "request");
-        messageMap.put("username", username);
+        messageMap.put("username", getUsername());
         messageMap.put("timestamp", getTimestamp());
         messageMap.put("serial", ++serial);
         Gson gson = new Gson();

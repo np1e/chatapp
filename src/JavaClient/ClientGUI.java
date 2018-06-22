@@ -151,5 +151,12 @@ public class ClientGUI extends Application{
         primaryStage.setTitle("JavaClient");
         primaryStage.setScene(loginScene);
         primaryStage.show();
+        primaryStage.setOnHidden(event -> {
+            try {
+                client.exit();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
     }
 }
