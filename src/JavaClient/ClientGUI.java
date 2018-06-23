@@ -93,6 +93,17 @@ public class ClientGUI extends Application{
         HBox sendMessageBox = new HBox();
         TextField messageField = new TextField();
         Button sendButton = new Button("Send");
+        sendButton.setOnMouseClicked(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event) {
+                try {
+                    client.sendChatMessage(messageField.getText(), clientListView.getSelectionModel().getSelectedItem().toString());
+                    messageField.setText("");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
 
         HBox.setHgrow(messageField, Priority.ALWAYS);
         sendMessageBox.getChildren().addAll(messageField, sendButton);

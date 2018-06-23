@@ -100,18 +100,15 @@ public class Client {
                 // Received message
                 if(json.get("method").getAsString().equals("message")) {
                     System.out.println("UDP MESSAGE RECEIVED / serial: " + json.get("serial"));
+                    updateChatMessages(json.get("message").toString().replace("\"", ""), json.get("username").toString());
+                    setVisibleChat(json.get("username").toString());
                     serial = json.get("serial").getAsInt();
                     send_ack();
                 }
                 // Received request
                 if(json.get("method").getAsString().equals("request")) {
-                    for(User u : activeusers) {
-                        if (u.toString().equals(json.get("username").toString().replace("\"", ""))) {
-                            System.out.println("UDP CHAT REQUEST RECEIVED from " + json.get("username") + " / serial: " + json.get("serial"));
-                            updateChatMessages("Chatanfrage erhalten!", json.get("username").toString());
-                            setVisibleChat(json.get("username").toString());
-                        }
-                    }
+                    updateChatMessages("Chatanfrage erhalten!", json.get("username").toString());
+                    setVisibleChat(json.get("username").toString());
                     serial = json.get("serial").getAsInt();
                     send_ack();
                 }
@@ -132,6 +129,7 @@ public class Client {
                 //found correct user
                 Platform.runLater(() -> {
                     u.getChat().add(new Message(message, getTimestamp()));
+                    activechat.setAll(u.getChat());
                 });
             }
         }
@@ -143,7 +141,6 @@ public class Client {
             if(u.toString().equals(username.replace("\"", ""))) {
                 //found correct user
                 Platform.runLater(() -> {
-                    activechat.clear();
                     activechat.setAll(u.getChat());
                 });
             }
@@ -231,6 +228,22 @@ public class Client {
         Map messageMap = new HashMap();
         messageMap.put("method", "request");
         messageMap.put("username", getUsername().getValue());
+        messageMap.put("timestamp", getTimestamp());
+        messageMap.put("serial", ++serial);
+        Gson gson = new Gson();
+        byte[] messageBytes = gson.toJson(messageMap).getBytes();
+
+        // UDP Send
+        udp_send(messageBytes);
+    }
+
+    public void sendChatMessage(String message, String username) throws Exception {
+        // Build messageMap
+        updateChatMessages(message, username);
+        Map messageMap = new HashMap();
+        messageMap.put("method", "message");
+        messageMap.put("username", getUsername().getValue());
+        messageMap.put("message", message);
         messageMap.put("timestamp", getTimestamp());
         messageMap.put("serial", ++serial);
         Gson gson = new Gson();
