@@ -43,9 +43,6 @@ public class Client {
 
     }
 
-    public void setActiveChat(User user) {
-        activechat = user.getChat();
-    }
     public SimpleStringProperty getUsername() {
         return username;
     }
@@ -111,7 +108,8 @@ public class Client {
                     for(User u : activeusers) {
                         if (u.toString().equals(json.get("username").toString().replace("\"", ""))) {
                             System.out.println("UDP CHAT REQUEST RECEIVED from " + json.get("username") + " / serial: " + json.get("serial"));
-                            activechat = u.getChat();
+                            updateChatMessages("Chatanfrage erhalten!", json.get("username").toString());
+                            setVisibleChat(json.get("username").toString());
                         }
                     }
                     serial = json.get("serial").getAsInt();
@@ -125,6 +123,31 @@ public class Client {
             }
         }
 
+    }
+
+    public void updateChatMessages(String message, String username) {
+        //find chat by username
+        for(User u : activeusers) {
+            if(u.toString().equals(username.replace("\"", ""))) {
+                //found correct user
+                Platform.runLater(() -> {
+                    u.getChat().add(new Message(message, getTimestamp()));
+                });
+            }
+        }
+    }
+
+    public void setVisibleChat(String username) {
+        //find chat by username
+        for(User u : activeusers) {
+            if(u.toString().equals(username.replace("\"", ""))) {
+                //found correct user
+                Platform.runLater(() -> {
+                    activechat.clear();
+                    activechat.setAll(u.getChat());
+                });
+            }
+        }
     }
 
     public void send_ack() {

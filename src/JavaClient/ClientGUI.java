@@ -81,14 +81,14 @@ public class ClientGUI extends Application{
         });
 
         VBox rightBox = new VBox();
-        ListView messageArea = new ListView(activechat);
+        ListView activeChat = new ListView(activechat);
         activechat.addListener(new ListChangeListener<Message>() {
             @Override
             public void onChanged(Change<? extends Message> c) {
                 System.out.println("changed!");
             }
         });
-        VBox.setVgrow(messageArea, Priority.ALWAYS);
+        VBox.setVgrow(activeChat, Priority.ALWAYS);
 
         HBox sendMessageBox = new HBox();
         TextField messageField = new TextField();
@@ -97,7 +97,7 @@ public class ClientGUI extends Application{
         HBox.setHgrow(messageField, Priority.ALWAYS);
         sendMessageBox.getChildren().addAll(messageField, sendButton);
 
-        rightBox.getChildren().addAll(messageArea, sendMessageBox);
+        rightBox.getChildren().addAll(activeChat, sendMessageBox);
 
         BorderPane root = new BorderPane();
         root.setLeft(leftBox);
