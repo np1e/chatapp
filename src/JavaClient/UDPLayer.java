@@ -65,7 +65,6 @@ public class UDPLayer {
                 if(json.has("hashcode")) {
                     // Not corrupted
                     client.deliver_data(json);
-                    /*
                     if(!udp_corrupted(json))  {
                         // Deliver data to client.deliver_data(), client.deliver_data() triggers ack
                         client.deliver_data(json);
@@ -75,16 +74,17 @@ public class UDPLayer {
                         // Send nak (and ask for repetition)!
                         make_nak();
                     }
-                    */
                 }
                 // Has no hashcode -> ACK/NAK
                 else {
                     // ACK
                     if(json.get("method").getAsString().equals("ack")) {
+                        System.out.println("ACK!");
                         //serialized_chat.remove(json.get("serial").getAsInt());
                     }
                     // NAK
                     else if(json.get("method").getAsString().equals("nak")) {
+                        System.out.println("NAK!");
                         //Map pkt_map = serialized_chat.get(json.get("serial").getAsInt());
                         //remake_pkt(pkt_map);
                     }

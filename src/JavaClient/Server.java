@@ -77,13 +77,13 @@ public class Server {
 
             activeUsers.clear();
             activeUsers.addAll(users);
-
-            for(User u: activeUsers) {
-                if(u.toString().equals(username.getValue())){
+            for (User u : activeUsers) {
+                if (u.toString().equals(username.getValue())) {
                     System.out.println("found " + u.toString());
                     System.out.println("username: " + username.getValue());
                     User me = u;
                     activeUsers.remove(me);
+                    break;
                 }
             }
             System.out.println("Updated list");
