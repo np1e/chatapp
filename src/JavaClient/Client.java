@@ -80,9 +80,46 @@ public class Client {
         // Received request
         if(json.get("method").getAsString().equals("request")) {
             String username = json.get("username").toString().replace("\"", "");
+            for(User u: activeusers) {
+                if(u.toString().equals(username)) {
+                    u.setRequested(true);
+                }
+            }
             updateChatMessages(username,"Chatanfrage erhalten!",false);
             updateChatMessages(username,"Annehmen?",true);
             setVisibleChat(username);
+            udp.setSerial(json.get("serial").getAsInt());
+            udp.make_ack();
+        }
+        // Received request
+        if(json.get("method").getAsString().equals("ack")) {
+            System.out.println("received ack / serial: " + json.get("serial"));
+        }
+        // Received confirmation
+        if(json.get("method").getAsString().equals("confirm")) {
+            String username = json.get("username").toString().replace("\"", "");
+            for(User u: activeusers) {
+                if(u.toString().equals(username)) {
+                    u.setConfirmed(true);
+                }
+            }
+            updateChatMessages(username, "Chatanfrage wurde akzeptiert!", false);
+            setVisibleChat(username);
+
+            udp.setSerial(json.get("serial").getAsInt());
+            udp.make_ack();
+        }
+        // Received decline
+        if(json.get("method").getAsString().equals("decline")) {
+            String username = json.get("username").toString().replace("\"", "");
+            for(User u: activeusers) {
+                if(u.toString().equals(username)) {
+                    u.setConfirmed(false);
+                }
+            }
+            updateChatMessages(username, "Chatanfrage wurde abgelehnt!", false);
+            setVisibleChat(username);
+
             udp.setSerial(json.get("serial").getAsInt());
             udp.make_ack();
         }
@@ -94,7 +131,7 @@ public class Client {
             if(u.toString().equals(username)) {
                 //found correct user
                 Platform.runLater(() -> {
-                    u.getChat().add(new Message(message, getTimestamp(), username, confirm));
+                    u.getChat().add(new Message(message, getTimestamp(), u, confirm));
                     activechat.setAll(u.getChat());
                 });
             }

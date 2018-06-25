@@ -64,20 +64,23 @@ public class ClientGUI extends Application{
         ListView<Message> activeChat = new ListView(activechat);
         activeChat.setCellFactory(new ChatCellFactory());
 
-        client.activeChatPartnerProperty().addListener(new ChangeListener<String>() {
+        activechat.addListener(new ListChangeListener<Message>() {
             @Override
-            public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
-                for(User u: activeusers) {
-                    if(u.toString().equals(newValue)) {
-                        clientListView.getSelectionModel().select(u);
-                    }
-                }
+            public void onChanged(Change<? extends Message> c) {
+                System.out.println("changed!");
             }
         });
+
+
+
+
+
+
         VBox.setVgrow(activeChat, Priority.ALWAYS);
 
         HBox sendMessageBox = new HBox();
         TextField messageField = new TextField();
+        messageField.setDisable(true);
         Button sendButton = new Button("Send");
 
         HBox.setHgrow(messageField, Priority.ALWAYS);
@@ -115,6 +118,20 @@ public class ClientGUI extends Application{
 
         Scene loginScene = new Scene(loginRoot, 200, 200);
 
+        client.activeChatPartnerProperty().addListener(new ChangeListener<String>() {
+            @Override
+            public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
+                for(User u: activeusers) {
+                    if(u.toString().equals(newValue)) {
+                        clientListView.getSelectionModel().select(u);
+                        if(u.isConfirmed()) {
+                            messageField.setDisable(false);
+                            client.udp.make_chatconf();
+                        }
+                    }
+                }
+            }
+        });
 
         client.getUsername().addListener(new ChangeListener<String>() {
             @Override

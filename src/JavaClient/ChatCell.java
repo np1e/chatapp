@@ -15,8 +15,10 @@ public class ChatCell extends ListCell<Message> {
     private Label text;
     Button accept;
     Button decline;
+    private Message m;
 
     public ChatCell() {
+        m = this.getItem();
         message = new HBox();
         pane = new Pane();
         text = new Label("<empty>");
@@ -26,7 +28,8 @@ public class ChatCell extends ListCell<Message> {
         accept.setOnMouseClicked(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent event) {
-
+                System.out.println(m.toString());
+                m.setConfirmed(true);
                 System.out.println("accepted");
             }
         });
@@ -34,6 +37,7 @@ public class ChatCell extends ListCell<Message> {
         decline.setOnMouseClicked(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent event) {
+                m.setConfirmed(false);
                 System.out.println("declined");
             }
         });

@@ -158,7 +158,26 @@ public class UDPLayer {
 
     // Build pkt_map for chat-confirm
     public void make_chatconf() {
+        Map pkt_map = new HashMap();
+        pkt_map.put("method", "confirm");
+        pkt_map.put("username", client.getUsername().getValue());
+        pkt_map.put("timestamp", get_timestamp());
+        pkt_map.put("serial", ++serial);
+        pkt_map.put("hashcode", pkt_map.hashCode());
 
+        make_pkt(serial, pkt_map);
+    }
+
+    // Build pkt_map for chat-decline
+    public void make_chatdecl() {
+        Map pkt_map = new HashMap();
+        pkt_map.put("method", "decline");
+        pkt_map.put("username", client.getUsername().getValue());
+        pkt_map.put("timestamp", get_timestamp());
+        pkt_map.put("serial", ++serial);
+        pkt_map.put("hashcode", pkt_map.hashCode());
+
+        make_pkt(serial, pkt_map);
     }
 
     // Build pkt_map for ack

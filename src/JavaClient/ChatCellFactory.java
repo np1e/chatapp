@@ -9,4 +9,6 @@ public class ChatCellFactory implements Callback<ListView<Message>, ListCell<Mes
     public ListCell<Message> call(ListView<Message> param) {
         return new ChatCell();
     }
+
+
 }
