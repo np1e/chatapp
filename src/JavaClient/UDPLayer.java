@@ -1,23 +1,25 @@
 package JavaClient;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.reflect.TypeToken;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.ObservableList;
 
 import java.io.*;
+import java.lang.reflect.Type;
 import java.net.*;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.zip.Checksum;
 
 public class UDPLayer {
 
     private int udp_port;
     private int serial;
+    private Map<Object, Map> serialized_chat;
     private Client client;
 
     public UDPLayer(String udp_port, Client client) throws IOException {
@@ -59,8 +61,32 @@ public class UDPLayer {
                 // Received packet
                 JsonObject json = udp_extract(new String(receivePacket.getData(), 0, receivePacket.getLength()));
 
-                // Deliver data to client.deliver_data()
-                client.deliver_data(json);
+                // Check if message has hashcode
+                if(json.has("hashcode")) {
+                    // Not corrupted
+                    if(!udp_corrupted(json))  {
+                        // Deliver data to client.deliver_data(), client.deliver_data() triggers ack
+                        client.deliver_data(json);
+                    }
+                    // Corrupted!
+                    else {
+                        // Send nak (and ask for repetition)!
+                        make_nak();
+                    }
+                }
+                // Has no hashcode -> ACK/NAK
+                else {
+                    // ACK
+                    if(json.get("method").getAsString().equals("ack")) {
+                        //serialized_chat.remove(json.get("serial").getAsInt());
+                    }
+                    // NAK
+                    else if(json.get("method").getAsString().equals("nak")) {
+                        //Map pkt_map = serialized_chat.get(json.get("serial").getAsInt());
+                        //remake_pkt(pkt_map);
+                    }
+                }
+
             }
         }
     }
@@ -69,6 +95,22 @@ public class UDPLayer {
     public JsonObject udp_extract(String jsonString) {
         JsonParser parser = new com.google.gson.JsonParser();
         return parser.parse(jsonString).getAsJsonObject();
+    }
+
+    // Check hashcode
+    public boolean udp_corrupted(JsonObject json) {
+        // Get transmitted hashcode
+        int tran_hashcode = json.get("hashcode").getAsInt();
+
+        // Remove hashcode field and re-calculate hashcode
+        json.remove("hashcode");
+        Map<String,String> pkt_map = new Gson().fromJson(json, Map.class);
+        int calc_hashcode = pkt_map.hashCode();
+
+        if(tran_hashcode == calc_hashcode) {
+            return false;
+        }
+        return true;
     }
 
     // ----- Sending data ------
@@ -80,9 +122,10 @@ public class UDPLayer {
         pkt_map.put("username", username);
         pkt_map.put("message", content);
         pkt_map.put("timestamp", get_timestamp());
-        pkt_map.put("serial", ++serial);
+        pkt_map.put("serial",  String.valueOf(++serial));
+        pkt_map.put("hashcode", pkt_map.hashCode());
 
-        make_pkt(pkt_map);
+        make_pkt(serial, pkt_map);
     }
 
     // Build pkt_map for chat-request
@@ -93,7 +136,7 @@ public class UDPLayer {
         pkt_map.put("timestamp", get_timestamp());
         pkt_map.put("serial", ++serial);
 
-        make_pkt(pkt_map);
+        make_pkt(serial, pkt_map);
     }
 
     // Build pkt_map for ack
@@ -102,7 +145,7 @@ public class UDPLayer {
         pkt_map.put("method", "ack");
         pkt_map.put("serial", serial);
 
-        make_pkt(pkt_map);
+        make_pkt(serial, pkt_map);
     }
 
     // Build pkt_map for nak
@@ -111,11 +154,26 @@ public class UDPLayer {
         pkt_map.put("method", "nak");
         pkt_map.put("serial", serial);
 
-        make_pkt(pkt_map);
+        make_pkt(serial, pkt_map);
     }
 
     // Building packets (messages, ack, ...)
-    public void make_pkt(Map pkt_map) {
+    public void make_pkt(int serial, Map pkt_map) {
+        // Store pkt_map in serialized_chat, pkt_map gets removed, if ack is received
+        //serialized_chat.put(serial, pkt_map);
+
+        Gson gson = new Gson();
+        byte[] bytes = gson.toJson(pkt_map).getBytes();
+
+        try {
+            udp_send(bytes);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Rebuilding packets (messages, ack, ...)
+    public void remake_pkt(Map pkt_map) {
         Gson gson = new Gson();
         byte[] bytes = gson.toJson(pkt_map).getBytes();
 
@@ -146,13 +204,6 @@ public class UDPLayer {
         SimpleDateFormat curTime = new SimpleDateFormat("dd-MM-yyy HH:mm:ss");
         Date now = new Date();
         return curTime.format(now);
-    }
-
-    // Get checksum of byte-array
-    public Checksum get_checksum(byte[] bytes) {
-        Checksum checksum = null;
-        checksum.update(bytes, 0, bytes.length);
-        return checksum;
     }
 
 }
