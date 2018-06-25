@@ -12,6 +12,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.zip.Checksum;
 
 public class UDPLayer {
 
@@ -104,6 +105,15 @@ public class UDPLayer {
         make_pkt(pkt_map);
     }
 
+    // Build pkt_map for nak
+    public void make_nak() {
+        Map pkt_map = new HashMap();
+        pkt_map.put("method", "nak");
+        pkt_map.put("serial", serial);
+
+        make_pkt(pkt_map);
+    }
+
     // Building packets (messages, ack, ...)
     public void make_pkt(Map pkt_map) {
         Gson gson = new Gson();
@@ -136,6 +146,13 @@ public class UDPLayer {
         SimpleDateFormat curTime = new SimpleDateFormat("dd-MM-yyy HH:mm:ss");
         Date now = new Date();
         return curTime.format(now);
+    }
+
+    // Get checksum of byte-array
+    public Checksum get_checksum(byte[] bytes) {
+        Checksum checksum = null;
+        checksum.update(bytes, 0, bytes.length);
+        return checksum;
     }
 
 }
