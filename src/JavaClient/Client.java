@@ -83,7 +83,6 @@ public class Client {
             updateChatMessages(username,"Chatanfrage erhalten!",false);
             updateChatMessages(username,"Annehmen?",true);
             setVisibleChat(username);
-
             udp.setSerial(json.get("serial").getAsInt());
             udp.make_ack();
         }

@@ -8,6 +8,8 @@ import com.google.gson.reflect.TypeToken;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.ObservableList;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.*;
 import java.lang.reflect.Type;
 import java.net.*;
@@ -23,6 +25,7 @@ public class UDPLayer {
     private Client client;
 
     public UDPLayer(String udp_port, Client client) throws IOException {
+        this.serialized_chat = new HashMap<>();
         this.serial = 0;
         this.client = client;
         // udp_rcv
@@ -61,32 +64,41 @@ public class UDPLayer {
                 // Received packet
                 JsonObject json = udp_extract(new String(receivePacket.getData(), 0, receivePacket.getLength()));
 
-                // Check if message has hashcode
-                if(json.has("hashcode")) {
-                    // Not corrupted
-                    if(!udp_corrupted(json))  {
-                        // Deliver data to client.deliver_data(), client.deliver_data() triggers ack
-                        client.deliver_data(json);
-                    }
-                    // Corrupted!
-                    else {
-                        // Send nak (and ask for repetition)!
-                        make_nak();
-                    }
+                // NAKTEST
+                if(json.get("method").getAsString().equals("message") &&
+                   json.get("message").getAsString().equals("NAKTEST")) {
+                    // Send no ack -- Representing lost nak
                 }
-                // Has no hashcode -> ACK/NAK
+                // Normal functionality
                 else {
-                    // ACK
-                    if(json.get("method").getAsString().equals("ack")) {
-                        System.out.println("ACK!");
-                        //serialized_chat.remove(json.get("serial").getAsInt());
+                    // Check if message has hashcode
+                    if (json.has("hashcode")) {
+                        // Not corrupted
+                        if (!udp_corrupted(json)) {
+                            // Deliver data to client.deliver_data(), client.deliver_data() triggers ack
+                            client.deliver_data(json);
+                        }
+                        // Corrupted!
+                        else {
+                            // Send nak (and ask for repetition)!
+                            make_nak();
+                        }
                     }
-                    // NAK
-                    else if(json.get("method").getAsString().equals("nak")) {
-                        System.out.println("NAK!");
-                        //Map pkt_map = serialized_chat.get(json.get("serial").getAsInt());
-                        //remake_pkt(pkt_map);
+                    // Has no hashcode -> ACK/NAK
+                    else {
+                        // ACK
+                        if (json.get("method").getAsString().equals("ack")) {
+                            System.out.println("ACK!");
+                            serialized_chat.remove(json.get("serial").getAsInt());
+                        }
+                        // NAK
+                        else if (json.get("method").getAsString().equals("nak")) {
+                            System.out.println("NAK!");
+                            Map pkt_map = serialized_chat.get(json.get("serial").getAsInt());
+                            remake_pkt(json.get("serial").getAsInt(), pkt_map);
+                        }
                     }
+
                 }
 
             }
@@ -109,6 +121,8 @@ public class UDPLayer {
         Map<String,String> pkt_map = new Gson().fromJson(json, Map.class);
         int calc_hashcode = pkt_map.hashCode();
 
+        System.out.println(tran_hashcode);
+        System.out.println(calc_hashcode);
         if(tran_hashcode == calc_hashcode) {
             return false;
         }
@@ -153,7 +167,14 @@ public class UDPLayer {
         pkt_map.put("method", "ack");
         pkt_map.put("serial", serial);
 
-        make_pkt(serial, pkt_map);
+        Gson gson = new Gson();
+        byte[] bytes = gson.toJson(pkt_map).getBytes();
+
+        try {
+            udp_send(bytes);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     // Build pkt_map for nak
@@ -162,13 +183,38 @@ public class UDPLayer {
         pkt_map.put("method", "nak");
         pkt_map.put("serial", serial);
 
-        make_pkt(serial, pkt_map);
+        Gson gson = new Gson();
+        byte[] bytes = gson.toJson(pkt_map).getBytes();
+
+        try {
+            udp_send(bytes);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     // Building packets (messages, ack, ...)
     public void make_pkt(int serial, Map pkt_map) {
         // Store pkt_map in serialized_chat, pkt_map gets removed, if ack is received
-        //serialized_chat.put(serial, pkt_map);
+        serialized_chat.put(serial, pkt_map);
+
+        Thread thread = new Thread(){
+            public void run(){
+                try {
+                    this.sleep(5000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                if(serialized_chat.containsKey(serial)) {
+                    System.out.println("No ACK received in 5 seconds, resending packet");
+                    remake_pkt(serial, pkt_map);
+                    this.interrupt();
+                } else {
+                    this.interrupt();
+                }
+            }
+        };
+        thread.start();
 
         Gson gson = new Gson();
         byte[] bytes = gson.toJson(pkt_map).getBytes();
@@ -181,7 +227,32 @@ public class UDPLayer {
     }
 
     // Rebuilding packets (messages, ack, ...)
-    public void remake_pkt(Map pkt_map) {
+    public void remake_pkt(int serial, Map pkt_map) {
+        Thread thread = new Thread(){
+            public void run(){
+                try {
+                    this.sleep(5000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                if(serialized_chat.containsKey(serial)) {
+                    System.out.println("No ACK received in 5 seconds, resending packet");
+
+                    // NAKTEST
+                    pkt_map.put("message", "No NAKTEST anymore");
+                    pkt_map.remove("hashcode");
+                    int newhash = pkt_map.hashCode();
+                    pkt_map.put("hashcode", newhash);
+                    System.out.println("Modified pkt_map message: " + pkt_map);
+
+                    remake_pkt(serial, pkt_map);
+                } else {
+                    this.interrupt();
+                }
+            }
+        };
+        thread.start();
+
         Gson gson = new Gson();
         byte[] bytes = gson.toJson(pkt_map).getBytes();
 
