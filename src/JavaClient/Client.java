@@ -100,8 +100,10 @@ public class Client {
         //find chat by username
         for(User u : activeusers) {
             if(u.toString().equals(username)) {
+                System.out.println("found user in updateChatMessage");
                 //found correct user
                 Platform.runLater(() -> {
+                    System.out.println("updated");
                     u.getChat().add(new Message(message, getTimestamp(), username, confirm));
                     activechat.setAll(u.getChat());
                 });

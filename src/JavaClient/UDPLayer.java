@@ -143,6 +143,11 @@ public class UDPLayer {
         make_pkt(serial, pkt_map);
     }
 
+    // Build pkt_map for chat-confirm
+    public void make_chatconf() {
+
+    }
+
     // Build pkt_map for ack
     public void make_ack() {
         Map pkt_map = new HashMap();

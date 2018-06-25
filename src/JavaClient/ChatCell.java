@@ -26,6 +26,7 @@ public class ChatCell extends ListCell<Message> {
         accept.setOnMouseClicked(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent event) {
+
                 System.out.println("accepted");
             }
         });
@@ -40,8 +41,9 @@ public class ChatCell extends ListCell<Message> {
 
     public void updateItem(Message m, boolean empty) {
         super.updateItem(m, empty);
-
         setText(null);
+        setGraphic(null);
+        message.getChildren().remove(0, message.getChildren().size());
 
         if(m == null || empty) {
             setGraphic(null);
@@ -56,6 +58,5 @@ public class ChatCell extends ListCell<Message> {
                     + m.getMessage();
             setText(messageString);
         }
-
     }
 }
