@@ -162,7 +162,7 @@ public class UDPLayer {
         pkt_map.put("method", "confirm");
         pkt_map.put("username", client.getUsername().getValue());
         pkt_map.put("timestamp", get_timestamp());
-        pkt_map.put("serial", ++serial);
+        pkt_map.put("serial", String.valueOf(++serial));
         pkt_map.put("hashcode", pkt_map.hashCode());
 
         make_pkt(serial, pkt_map);
@@ -174,7 +174,7 @@ public class UDPLayer {
         pkt_map.put("method", "decline");
         pkt_map.put("username", client.getUsername().getValue());
         pkt_map.put("timestamp", get_timestamp());
-        pkt_map.put("serial", ++serial);
+        pkt_map.put("serial", String.valueOf(++serial));
         pkt_map.put("hashcode", pkt_map.hashCode());
 
         make_pkt(serial, pkt_map);

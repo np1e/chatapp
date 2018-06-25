@@ -123,15 +123,25 @@ public class ClientGUI extends Application{
             public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
                 for(User u: activeusers) {
                     if(u.toString().equals(newValue)) {
+                        u.confirmedProperty().addListener(new ChangeListener<Boolean>() {
+                            @Override
+                            public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+                                if(oldValue == false && newValue == true) {
+                                    client.udp.make_chatconf();
+                                }
+                            }
+                        });
                         clientListView.getSelectionModel().select(u);
                         if(u.isConfirmed()) {
                             messageField.setDisable(false);
-                            client.udp.make_chatconf();
                         }
                     }
                 }
             }
         });
+
+
+
 
         client.getUsername().addListener(new ChangeListener<String>() {
             @Override
@@ -145,6 +155,7 @@ public class ClientGUI extends Application{
             public void handle(MouseEvent event) {
                 try {
                     client.udp.make_chatreq();
+                    messageField.setDisable(false);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
