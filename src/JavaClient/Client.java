@@ -25,6 +25,8 @@ public class Client {
     private int serial;
     private SimpleStringProperty username;
 
+    public UDPLayer udp;
+
 
     public Client(String portUDP, String portTCP, ObservableList activeUsers, ObservableList<Message> activeChat) throws IOException {
         username = new SimpleStringProperty();
@@ -36,10 +38,8 @@ public class Client {
         writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
         reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         // UDP
+        this.udp = new UDPLayer(portUDP, this);
         this.portUDP = Integer.parseInt(portUDP);
-
-        serial = 0;
-        new Thread(new Client.udpReceive(Integer.parseInt(portUDP))).start();
 
     }
 
@@ -69,63 +69,37 @@ public class Client {
         return activechat;
     }
 
-    public class udpReceive implements Runnable {
-        private int listenOnPort;
-        public udpReceive(int port) {
-            listenOnPort = port;
+    public void deliver_data(JsonObject json) {
+        // Received message
+        if(json.get("method").getAsString().equals("message")) {
+            String username = json.get("username").toString().replace("\"", "");
+            String message = json.get("message").toString().replace("\"", "");
+            System.out.println(message + "// from: " +username);
+            updateChatMessages(username, message);
+            setVisibleChat(username);
+
+            udp.setSerial(json.get("serial").getAsInt());
+            udp.make_ack();
         }
-        public void run() {
+        // Received request
+        if(json.get("method").getAsString().equals("request")) {
+            String username = json.get("username").toString().replace("\"", "");
+            updateChatMessages(username,"Chatanfrage erhalten!");
+            setVisibleChat(username);
 
-            // Build datagram
-            DatagramSocket serverSocket = null;
-            try { serverSocket = new DatagramSocket(listenOnPort); }
-            catch(SocketException e) { e.printStackTrace(); }
-
-            // Build
-            byte[] receiveData = new byte[1024];
-
-            while(true) {
-                // Wait for message
-                DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-                try { serverSocket.receive(receivePacket); }
-                catch (IOException e) { e.printStackTrace(); }
-
-                // Received packet
-                String jsonString = new String(receivePacket.getData(), 0, receivePacket.getLength());
-                JsonParser parser = new com.google.gson.JsonParser();
-                JsonObject json = parser.parse(jsonString).getAsJsonObject();
-                String adress = new String(String.valueOf(receivePacket.getAddress()));
-                String port = new String(String.valueOf(receivePacket.getPort()));
-
-                // Received message
-                if(json.get("method").getAsString().equals("message")) {
-                    System.out.println("UDP MESSAGE RECEIVED / serial: " + json.get("serial"));
-                    updateChatMessages(json.get("message").toString().replace("\"", ""), json.get("username").toString());
-                    setVisibleChat(json.get("username").toString());
-                    serial = json.get("serial").getAsInt();
-                    send_ack();
-                }
-                // Received request
-                if(json.get("method").getAsString().equals("request")) {
-                    updateChatMessages("Chatanfrage erhalten!", json.get("username").toString());
-                    setVisibleChat(json.get("username").toString());
-                    serial = json.get("serial").getAsInt();
-                    send_ack();
-                }
-                // Received request
-                if(json.get("method").getAsString().equals("ack")) {
-                    System.out.println("ACK RECEIVED / serial: " + json.get("serial"));
-                }
-
-            }
+            udp.setSerial(json.get("serial").getAsInt());
+            udp.make_ack();
         }
-
+        // Received request
+        if(json.get("method").getAsString().equals("ack")) {
+            System.out.println("received ack / serial: " + json.get("serial"));
+        }
     }
 
-    public void updateChatMessages(String message, String username) {
+    public void updateChatMessages(String username, String message) {
         //find chat by username
         for(User u : activeusers) {
-            if(u.toString().equals(username.replace("\"", ""))) {
+            if(u.toString().equals(username)) {
                 //found correct user
                 Platform.runLater(() -> {
                     u.getChat().add(new Message(message, getTimestamp()));
@@ -138,27 +112,12 @@ public class Client {
     public void setVisibleChat(String username) {
         //find chat by username
         for(User u : activeusers) {
-            if(u.toString().equals(username.replace("\"", ""))) {
+            if(u.toString().equals(username)) {
                 //found correct user
                 Platform.runLater(() -> {
                     activechat.setAll(u.getChat());
                 });
             }
-        }
-    }
-
-    public void send_ack() {
-        // Build ackMap
-        Map ackMap = new HashMap();
-        ackMap.put("method", "ack");
-        ackMap.put("serial", serial);
-        Gson gson = new Gson();
-        byte[] ackBytes = gson.toJson(ackMap).getBytes();
-
-        try {
-            udp_send(ackBytes);
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 
@@ -193,10 +152,6 @@ public class Client {
         System.out.println(activeusers);
     }
 
-    public ObservableList getUsers() {
-        return activeusers;
-    }
-
     private JsonObject parseJson(String jsonString) {
         System.out.println(jsonString);
         JsonParser parser = new com.google.gson.JsonParser();
@@ -216,55 +171,10 @@ public class Client {
         socket.close();
     }
 
-
     public String getTimestamp() {
         SimpleDateFormat curTime = new SimpleDateFormat("dd-MM-yyy HH:mm:ss");
         Date now = new Date();
         return curTime.format(now);
-    }
-
-    public void sendChatRequest(String username) throws Exception {
-        // Build messageMap
-        Map messageMap = new HashMap();
-        messageMap.put("method", "request");
-        messageMap.put("username", getUsername().getValue());
-        messageMap.put("timestamp", getTimestamp());
-        messageMap.put("serial", ++serial);
-        Gson gson = new Gson();
-        byte[] messageBytes = gson.toJson(messageMap).getBytes();
-
-        // UDP Send
-        udp_send(messageBytes);
-    }
-
-    public void sendChatMessage(String message, String username) throws Exception {
-        // Build messageMap
-        updateChatMessages(message, username);
-        Map messageMap = new HashMap();
-        messageMap.put("method", "message");
-        messageMap.put("username", getUsername().getValue());
-        messageMap.put("message", message);
-        messageMap.put("timestamp", getTimestamp());
-        messageMap.put("serial", ++serial);
-        Gson gson = new Gson();
-        byte[] messageBytes = gson.toJson(messageMap).getBytes();
-
-        // UDP Send
-        udp_send(messageBytes);
-    }
-
-    public void udp_send(byte[] messageBytes) throws Exception {
-        int goalPort;
-        if(portUDP == 8010) { goalPort = 9010;}
-        else { goalPort = 8010; }
-
-        // Build datagram, goalIP
-        DatagramSocket clientSendSocket = new DatagramSocket();
-        InetAddress IPAddress = InetAddress.getByName("127.0.0.1");
-        // Send packet
-        DatagramPacket sendPacket = new DatagramPacket(messageBytes, messageBytes.length, IPAddress, goalPort);
-        clientSendSocket.send(sendPacket);
-
     }
 
 
