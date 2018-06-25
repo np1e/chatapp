@@ -17,6 +17,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 
 import java.io.IOException;
 
@@ -43,7 +44,7 @@ public class ClientGUI extends Application{
         activeusers = FXCollections.observableArrayList();
         activechat = FXCollections.observableArrayList();
         client = new Client(portUDP, portTCP, activeusers, activechat);
-        server = new Server(portTCP, activeusers);
+        server = new Server(portTCP, activeusers, client.getUsername());
 
         final Thread serverThread = new Thread(new Runnable() {
 
@@ -81,11 +82,23 @@ public class ClientGUI extends Application{
         });
 
         VBox rightBox = new VBox();
-        ListView activeChat = new ListView(activechat);
+        ListView<Message> activeChat = new ListView(activechat);
+        activeChat.setCellFactory(new ChatCellFactory());
         activechat.addListener(new ListChangeListener<Message>() {
             @Override
             public void onChanged(Change<? extends Message> c) {
                 System.out.println("changed!");
+            }
+        });
+
+        client.activeChatPartnerProperty().addListener(new ChangeListener<String>() {
+            @Override
+            public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
+                for(User u: activeusers) {
+                    if(u.toString().equals(newValue)) {
+                        clientListView.getSelectionModel().select(u);
+                    }
+                }
             }
         });
         VBox.setVgrow(activeChat, Priority.ALWAYS);
@@ -165,6 +178,16 @@ public class ClientGUI extends Application{
         primaryStage.setTitle(portUDP);
         primaryStage.setScene(loginScene);
         primaryStage.show();
+        primaryStage.setOnCloseRequest(event -> {
+            try {
+                client.exit();
+                server.exit();
+                Platform.exit();
+                System.exit(0);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
         primaryStage.setOnHidden(event -> {
             try {
                 client.exit();

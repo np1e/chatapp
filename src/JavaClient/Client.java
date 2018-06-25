@@ -17,6 +17,7 @@ public class Client {
 
     private ObservableList<Message> activechat;
     private ObservableList<User> activeusers;
+    private SimpleStringProperty activeChatPartner;
     private Socket socket;
     private BufferedWriter writer;
     private BufferedReader reader;
@@ -30,6 +31,7 @@ public class Client {
         username = new SimpleStringProperty();
         activeusers = activeUsers;
         activechat = activeChat;
+        activeChatPartner = new SimpleStringProperty();
         // TCP
         this.portTCP = Integer.parseInt(portTCP);
         socket = new Socket("127.0.1.1", 8080);
@@ -61,8 +63,7 @@ public class Client {
     public void exit() throws IOException {
         System.out.println("EXIT");
         logout();
-        Platform.exit();
-        System.exit(0);
+        close();
     }
 
     public ObservableList<Message> getActiveChat() {
@@ -100,14 +101,16 @@ public class Client {
                 // Received message
                 if(json.get("method").getAsString().equals("message")) {
                     System.out.println("UDP MESSAGE RECEIVED / serial: " + json.get("serial"));
-                    updateChatMessages(json.get("message").toString().replace("\"", ""), json.get("username").toString());
+                    System.out.println("message from" + json.get("username"));
+                    updateChatMessages(json.get("message").toString().replace("\"", ""), json.get("username").toString(), false);
                     setVisibleChat(json.get("username").toString());
                     serial = json.get("serial").getAsInt();
                     send_ack();
                 }
                 // Received request
                 if(json.get("method").getAsString().equals("request")) {
-                    updateChatMessages("Chatanfrage erhalten!", json.get("username").toString());
+                    updateChatMessages("Chatanfrage erhalten von " + json.get("username").toString() + "!", json.get("username").toString(), false);
+                    updateChatMessages("Anfrage annehmen?", json.get("username").toString(), true);
                     setVisibleChat(json.get("username").toString());
                     serial = json.get("serial").getAsInt();
                     send_ack();
@@ -122,17 +125,29 @@ public class Client {
 
     }
 
-    public void updateChatMessages(String message, String username) {
+    public void updateChatMessages(String message, String username, boolean confirm) {
         //find chat by username
         for(User u : activeusers) {
             if(u.toString().equals(username.replace("\"", ""))) {
                 //found correct user
                 Platform.runLater(() -> {
-                    u.getChat().add(new Message(message, getTimestamp()));
+                    u.getChat().add(new Message(message, getTimestamp(), username, confirm));
                     activechat.setAll(u.getChat());
                 });
             }
         }
+    }
+
+    public String getActiveChatPartner() {
+        return activeChatPartner.get();
+    }
+
+    public SimpleStringProperty activeChatPartnerProperty() {
+        return activeChatPartner;
+    }
+
+    public void setActiveChatPartner(String activeChatPartner) {
+        this.activeChatPartner.set(activeChatPartner);
     }
 
     public void setVisibleChat(String username) {
@@ -142,6 +157,7 @@ public class Client {
                 //found correct user
                 Platform.runLater(() -> {
                     activechat.setAll(u.getChat());
+                    activeChatPartner.set(u.toString());
                 });
             }
         }
@@ -239,7 +255,7 @@ public class Client {
 
     public void sendChatMessage(String message, String username) throws Exception {
         // Build messageMap
-        updateChatMessages(message, username);
+        updateChatMessages(message, username, false);
         Map messageMap = new HashMap();
         messageMap.put("method", "message");
         messageMap.put("username", getUsername().getValue());

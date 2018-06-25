@@ -52,12 +52,14 @@ public class Server {
 
         try {
             welcomeSocket = new ServerSocket(8080);
-            setLogs("Server started on " + welcomeSocket.getInetAddress().getLocalHost().getHostAddress() + ":" + welcomeSocket.getLocalPort());
 
+            setLogs("Server started on " + welcomeSocket.getInetAddress().getLocalHost().getHostAddress() + ":" + welcomeSocket.getLocalPort());
+            System.out.println("1");
             while(true) {
                 try {
                     setLogs("Waiting for client...");
                     final Socket connectionSocket = welcomeSocket.accept();
+
                     setLogs("Client connected.");
 
                     final Thread thread = new Thread(new Runnable() {

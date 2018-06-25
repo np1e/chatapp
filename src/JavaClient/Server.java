@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import javafx.application.Platform;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.ObservableList;
 
 import java.io.*;
@@ -17,10 +18,12 @@ public class Server {
     private int port;
     private ServerSocket welcomeSocket;
     private ObservableList<User> activeUsers;
+    private SimpleStringProperty username;
 
-    public Server(String port, ObservableList activeUsers) {
+    public Server(String port, ObservableList activeUsers, SimpleStringProperty username) {
         this.port = Integer.parseInt(port);
         this.activeUsers = activeUsers;
+        this.username = username;
 
     }
 
@@ -71,8 +74,18 @@ public class Server {
             users.add(new User(user.get("username").getAsString(), user.get("ip").getAsString()));
         }
         Platform.runLater(() -> {
+
             activeUsers.clear();
             activeUsers.addAll(users);
+
+            for(User u: activeUsers) {
+                if(u.toString().equals(username.getValue())){
+                    System.out.println("found " + u.toString());
+                    System.out.println("username: " + username.getValue());
+                    User me = u;
+                    activeUsers.remove(me);
+                }
+            }
             System.out.println("Updated list");
         });
 
@@ -91,5 +104,13 @@ public class Server {
         JsonObject json = parser.parse(jsonString).getAsJsonObject();
         return json;
 
+    }
+
+    public void exit() {
+        try {
+            welcomeSocket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

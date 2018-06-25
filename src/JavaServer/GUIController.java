@@ -2,13 +2,12 @@ package JavaServer;
 import javafx.application.Application;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
-import javafx.collections.MapChangeListener;
-import javafx.event.ActionEvent;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ListView;
-import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -19,15 +18,12 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-import java.io.*;
-import java.net.*;
-import java.util.Enumeration;
-
 public class GUIController extends Application {
     private ServerController controller;
     private Logger logger;
     private TextField port;
-    private TextArea logs;
+    private ListView<String> logsView;
+    private ObservableList<String> logs;
     private TextField commands;
     private ListView<User> userList;
 
@@ -39,15 +35,15 @@ public class GUIController extends Application {
         root.setCenter(center);
         Scene scene =  new Scene(root, 800, 600);
 
-        logger = new Logger("gui");
+        logs = FXCollections.observableArrayList();
+        logger = new Logger("gui", logs);
         controller = new ServerController(logger);
         Server server = controller.getServer();
 
-        logs = new TextArea();
-        logs.setEditable(false);
-        logs.setMouseTransparent(true);
-        logs.setFocusTraversable(false);
-        logs.setScrollTop(0);
+        logsView = new ListView(logs);
+        logsView.setEditable(false);
+        logsView.setMouseTransparent(true);
+        logsView.setFocusTraversable(false);
 
         port = new TextField();
         commands = new TextField();
@@ -56,13 +52,6 @@ public class GUIController extends Application {
 
         userList = new ListView<User>(controller.getActiveUsers());
 
-        logger.logProperty().addListener(new ChangeListener<String>() {
-            @Override
-            public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
-                System.out.println(newValue);
-                logs.appendText(newValue + "\n");
-            }
-        });
 
 
 
@@ -91,9 +80,9 @@ public class GUIController extends Application {
 
         VBox sideBar = new VBox();
         VBox rightBar = new VBox();
-        rightBar.getChildren().addAll(logs, commands);
+        rightBar.getChildren().addAll(logsView, commands);
         sideBar.getChildren().addAll(start, stop, port, userList);
-        VBox.setVgrow(logs, Priority.ALWAYS);
+        VBox.setVgrow(logsView, Priority.ALWAYS);
         center.getChildren().addAll(sideBar, rightBar);
 
 

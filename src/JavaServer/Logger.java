@@ -1,6 +1,8 @@
 package JavaServer;
 
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.ObservableList;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -8,11 +10,10 @@ import java.util.Date;
 public class Logger {
 
     boolean GUI;
-    SimpleStringProperty log;
-
+    private ObservableList<String> logs;
 
     public Logger(String mode) {
-        log = new SimpleStringProperty();
+        this.logs = logs;
         if (mode.equalsIgnoreCase("gui")){
             System.out.println("gui");
             GUI = true;
@@ -21,12 +22,18 @@ public class Logger {
         }
     }
 
+    public Logger(String mode, ObservableList logs) {
+        this(mode);
+        this.logs = logs;
+    }
+
     public void log(String log) {
-        if (GUI){
-            this.log.set(getTimestamp() + log);
-        } else {
-            System.out.println(getTimestamp() + log);
+        if (GUI) {
+            //Platform.runLater(() -> {
+            this.logs.add(getTimestamp() + log);
+            //});
         }
+        System.out.println(getTimestamp() + log);
 
     }
 
@@ -43,11 +50,5 @@ public class Logger {
         return timeStamp;
     }
 
-    public String getLog() {
-        return log.get();
-    }
 
-    public SimpleStringProperty logProperty() {
-        return log;
-    }
 }
