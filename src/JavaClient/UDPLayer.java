@@ -64,7 +64,6 @@ public class UDPLayer {
                 // Check if message has hashcode
                 if(json.has("hashcode")) {
                     // Not corrupted
-                    client.deliver_data(json);
                     if(!udp_corrupted(json))  {
                         // Deliver data to client.deliver_data(), client.deliver_data() triggers ack
                         client.deliver_data(json);
@@ -137,7 +136,7 @@ public class UDPLayer {
         pkt_map.put("method", "request");
         pkt_map.put("username", client.getUsername().getValue());
         pkt_map.put("timestamp", get_timestamp());
-        pkt_map.put("serial", ++serial);
+        pkt_map.put("serial", String.valueOf(++serial));
         pkt_map.put("hashcode", pkt_map.hashCode());
 
         make_pkt(serial, pkt_map);
@@ -170,7 +169,6 @@ public class UDPLayer {
     public void make_pkt(int serial, Map pkt_map) {
         // Store pkt_map in serialized_chat, pkt_map gets removed, if ack is received
         //serialized_chat.put(serial, pkt_map);
-        System.out.println("makepkt");
 
         Gson gson = new Gson();
         byte[] bytes = gson.toJson(pkt_map).getBytes();

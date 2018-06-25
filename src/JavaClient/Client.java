@@ -55,13 +55,10 @@ public class Client {
         json.addProperty("username", this.username.getValue());
         Gson gson = new Gson();
         String jsonString = gson.toJson(json);
-        System.out.println(jsonString);
         String response = sendText(jsonString);
-        System.out.println(response);
     }
 
     public void exit() throws IOException {
-        System.out.println("EXIT");
         logout();
         close();
     }
@@ -90,20 +87,14 @@ public class Client {
             udp.setSerial(json.get("serial").getAsInt());
             udp.make_ack();
         }
-        // Received request
-        if(json.get("method").getAsString().equals("ack")) {
-            System.out.println("received ack / serial: " + json.get("serial"));
-        }
     }
 
     public void updateChatMessages(String username, String message, boolean confirm) {
         //find chat by username
         for(User u : activeusers) {
             if(u.toString().equals(username)) {
-                System.out.println("found user in updateChatMessage");
                 //found correct user
                 Platform.runLater(() -> {
-                    System.out.println("updated");
                     u.getChat().add(new Message(message, getTimestamp(), username, confirm));
                     activechat.setAll(u.getChat());
                 });
@@ -148,7 +139,6 @@ public class Client {
         Gson gson = new Gson();
         String loginString = gson.toJson(loginData);
         String response = sendText(loginString);
-        System.out.println(response);
         //loadList(response);
 
     }
@@ -156,7 +146,6 @@ public class Client {
     private void loadList(String response) {
         JsonObject json = parseJson(response);
         JsonArray data = json.getAsJsonArray("data");
-        System.out.println(data);
         ArrayList<User> users = new ArrayList();
         for(JsonElement j: data) {
             JsonObject user = j.getAsJsonObject();
@@ -164,14 +153,11 @@ public class Client {
         }
         activeusers.removeAll();
         activeusers.addAll(users);
-        System.out.println(activeusers);
     }
 
     private JsonObject parseJson(String jsonString) {
-        System.out.println(jsonString);
         JsonParser parser = new com.google.gson.JsonParser();
         JsonObject json = parser.parse(jsonString).getAsJsonObject();
-        System.out.println(json);
         return json;
     }
 

@@ -63,12 +63,6 @@ public class ClientGUI extends Application{
         VBox rightBox = new VBox();
         ListView<Message> activeChat = new ListView(activechat);
         activeChat.setCellFactory(new ChatCellFactory());
-        activechat.addListener(new ListChangeListener<Message>() {
-            @Override
-            public void onChanged(Change<? extends Message> c) {
-                System.out.println("changed!");
-            }
-        });
 
         client.activeChatPartnerProperty().addListener(new ChangeListener<String>() {
             @Override
@@ -166,7 +160,6 @@ public class ClientGUI extends Application{
             @Override
             public void handle(MouseEvent event) {
                 try {
-                    System.out.println("logout requested");
                     client.logout();
                 } catch (IOException e) {
                     e.printStackTrace();
