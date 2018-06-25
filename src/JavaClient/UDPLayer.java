@@ -135,6 +135,7 @@ public class UDPLayer {
         pkt_map.put("username", username);
         pkt_map.put("timestamp", get_timestamp());
         pkt_map.put("serial", ++serial);
+        pkt_map.put("hashcode", pkt_map.hashCode());
 
         make_pkt(serial, pkt_map);
     }
