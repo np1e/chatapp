@@ -80,7 +80,6 @@ public class ClientGUI extends Application{
                 }
             }
         });
-        ListView activeChat = new ListView(activechat);
         VBox.setVgrow(activeChat, Priority.ALWAYS);
 
         HBox sendMessageBox = new HBox();
@@ -145,7 +144,7 @@ public class ClientGUI extends Application{
             @Override
             public void handle(MouseEvent event) {
                 try {
-                    client.updateChatMessages(clientListView.getSelectionModel().getSelectedItem().toString(), messageField.getText().toString());
+                    client.updateChatMessages(clientListView.getSelectionModel().getSelectedItem().toString(), messageField.getText().toString(), false);
                     client.udp.make_chatmsg(clientListView.getSelectionModel().getSelectedItem().toString(), messageField.getText().toString());
                     messageField.setText("");
                 } catch (Exception e) {

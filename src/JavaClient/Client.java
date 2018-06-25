@@ -76,16 +76,16 @@ public class Client {
             String username = json.get("username").toString().replace("\"", "");
             String message = json.get("message").toString().replace("\"", "");
             System.out.println(message + "// from: " +username);
-            updateChatMessages(username, message);
+            updateChatMessages(username, message, false);
             setVisibleChat(username);
-
             udp.setSerial(json.get("serial").getAsInt());
             udp.make_ack();
         }
         // Received request
         if(json.get("method").getAsString().equals("request")) {
             String username = json.get("username").toString().replace("\"", "");
-            updateChatMessages(username,"Chatanfrage erhalten!");
+            updateChatMessages(username,"Chatanfrage erhalten!",false);
+            updateChatMessages(username,"Annehmen?",true);
             setVisibleChat(username);
 
             udp.setSerial(json.get("serial").getAsInt());
@@ -97,7 +97,7 @@ public class Client {
         }
     }
 
-    public void updateChatMessages(String username, String message) {
+    public void updateChatMessages(String username, String message, boolean confirm) {
         //find chat by username
         for(User u : activeusers) {
             if(u.toString().equals(username)) {
