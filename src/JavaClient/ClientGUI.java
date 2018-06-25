@@ -133,7 +133,7 @@ public class ClientGUI extends Application{
             @Override
             public void handle(MouseEvent event) {
                 try {
-                    client.udp.make_chatreq(clientListView.getSelectionModel().getSelectedItem().toString());
+                    client.udp.make_chatreq();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -145,7 +145,7 @@ public class ClientGUI extends Application{
             public void handle(MouseEvent event) {
                 try {
                     client.updateChatMessages(clientListView.getSelectionModel().getSelectedItem().toString(), messageField.getText().toString(), false);
-                    client.udp.make_chatmsg(clientListView.getSelectionModel().getSelectedItem().toString(), messageField.getText().toString());
+                    client.udp.make_chatmsg(messageField.getText().toString());
                     messageField.setText("");
                 } catch (Exception e) {
                     e.printStackTrace();

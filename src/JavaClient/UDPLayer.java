@@ -64,6 +64,8 @@ public class UDPLayer {
                 // Check if message has hashcode
                 if(json.has("hashcode")) {
                     // Not corrupted
+                    client.deliver_data(json);
+                    /*
                     if(!udp_corrupted(json))  {
                         // Deliver data to client.deliver_data(), client.deliver_data() triggers ack
                         client.deliver_data(json);
@@ -73,6 +75,7 @@ public class UDPLayer {
                         // Send nak (and ask for repetition)!
                         make_nak();
                     }
+                    */
                 }
                 // Has no hashcode -> ACK/NAK
                 else {
@@ -116,10 +119,10 @@ public class UDPLayer {
     // ----- Sending data ------
 
     // Build pkt_map for chat-message
-    public void make_chatmsg(String username, String content) {
+    public void make_chatmsg(String content) {
         Map pkt_map = new HashMap();
         pkt_map.put("method", "message");
-        pkt_map.put("username", username);
+        pkt_map.put("username", client.getUsername().getValue());
         pkt_map.put("message", content);
         pkt_map.put("timestamp", get_timestamp());
         pkt_map.put("serial",  String.valueOf(++serial));
@@ -129,10 +132,10 @@ public class UDPLayer {
     }
 
     // Build pkt_map for chat-request
-    public void make_chatreq(String username) {
+    public void make_chatreq() {
         Map pkt_map = new HashMap();
         pkt_map.put("method", "request");
-        pkt_map.put("username", username);
+        pkt_map.put("username", client.getUsername().getValue());
         pkt_map.put("timestamp", get_timestamp());
         pkt_map.put("serial", ++serial);
         pkt_map.put("hashcode", pkt_map.hashCode());
@@ -162,6 +165,7 @@ public class UDPLayer {
     public void make_pkt(int serial, Map pkt_map) {
         // Store pkt_map in serialized_chat, pkt_map gets removed, if ack is received
         //serialized_chat.put(serial, pkt_map);
+        System.out.println("makepkt");
 
         Gson gson = new Gson();
         byte[] bytes = gson.toJson(pkt_map).getBytes();

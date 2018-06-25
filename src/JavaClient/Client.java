@@ -75,7 +75,6 @@ public class Client {
         if(json.get("method").getAsString().equals("message")) {
             String username = json.get("username").toString().replace("\"", "");
             String message = json.get("message").toString().replace("\"", "");
-            System.out.println(message + "// from: " +username);
             updateChatMessages(username, message, false);
             setVisibleChat(username);
             udp.setSerial(json.get("serial").getAsInt());
