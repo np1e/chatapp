@@ -15,6 +15,7 @@ public class Message {
         this.message = message;
         this.timestamp = timestamp;
         this.confirm = confirm;
+        this.confirmed = new SimpleBooleanProperty();
     }
 
     public Message(String message, String timestamp, User user, boolean confirm) {

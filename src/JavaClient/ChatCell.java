@@ -17,8 +17,9 @@ public class ChatCell extends ListCell<Message> {
     Button decline;
     private Message m;
 
-    public ChatCell() {
-        m = this.getItem();
+    public ChatCell(Message m) {
+        this.m = m;
+        if(this.isEmpty()) System.out.println("empty");
         message = new HBox();
         pane = new Pane();
         text = new Label("<empty>");
@@ -28,7 +29,6 @@ public class ChatCell extends ListCell<Message> {
         accept.setOnMouseClicked(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent event) {
-                System.out.println(m.toString());
                 m.setConfirmed(true);
                 System.out.println("accepted");
             }
