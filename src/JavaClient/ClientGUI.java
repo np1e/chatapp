@@ -39,15 +39,12 @@ public class ClientGUI extends Application{
     @Override
     public void start(Stage primaryStage) throws Exception {
 
-        Platform.setImplicitExit(false);
-
         activeusers = FXCollections.observableArrayList();
         activechat = FXCollections.observableArrayList();
         client = new Client(portUDP, portTCP, activeusers, activechat);
         server = new Server(portTCP, activeusers, client.getUsername());
 
         final Thread serverThread = new Thread(new Runnable() {
-
             @Override
             public void run() {
                 server.start();
@@ -62,24 +59,6 @@ public class ClientGUI extends Application{
         Label username = new Label("");
         Button logout = new Button("Logout");
         leftBox.getChildren().addAll(clientListView, username, logout);
-
-
-        client.getUsername().addListener(new ChangeListener<String>() {
-            @Override
-            public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
-                username.setText(newValue);
-            }
-        });
-        clientListView.setOnMouseClicked(new EventHandler<MouseEvent>() {
-            @Override
-            public void handle(MouseEvent event) {
-                try {
-                    client.sendChatRequest(clientListView.getSelectionModel().getSelectedItem().toString());
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        });
 
         VBox rightBox = new VBox();
         ListView<Message> activeChat = new ListView(activechat);
@@ -101,22 +80,12 @@ public class ClientGUI extends Application{
                 }
             }
         });
+        ListView activeChat = new ListView(activechat);
         VBox.setVgrow(activeChat, Priority.ALWAYS);
 
         HBox sendMessageBox = new HBox();
         TextField messageField = new TextField();
         Button sendButton = new Button("Send");
-        sendButton.setOnMouseClicked(new EventHandler<MouseEvent>() {
-            @Override
-            public void handle(MouseEvent event) {
-                try {
-                    client.sendChatMessage(messageField.getText(), clientListView.getSelectionModel().getSelectedItem().toString());
-                    messageField.setText("");
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        });
 
         HBox.setHgrow(messageField, Priority.ALWAYS);
         sendMessageBox.getChildren().addAll(messageField, sendButton);
@@ -129,7 +98,6 @@ public class ClientGUI extends Application{
 
         Scene mainScene = new Scene(root, 300, 300);
 
-
         //LoginScene
         BorderPane loginRoot = new BorderPane();
         VBox center = new VBox();
@@ -138,14 +106,6 @@ public class ClientGUI extends Application{
         TextField userNameLog = new TextField();
         TextField passWordLog = new PasswordField();
         Button submitLog = new Button("Login");
-        submitLog.setOnAction(e-> {
-            try {
-                client.login(userNameLog.getText(), passWordLog.getText());
-            } catch (IOException e1) {
-                e1.printStackTrace();
-            }
-            primaryStage.setScene(mainScene);
-        });
         VBox login = new VBox();
         login.getChildren().addAll(userNameLog, passWordLog, submitLog);
 
@@ -161,6 +121,47 @@ public class ClientGUI extends Application{
         loginRoot.setCenter(center);
 
         Scene loginScene = new Scene(loginRoot, 200, 200);
+
+
+        client.getUsername().addListener(new ChangeListener<String>() {
+            @Override
+            public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
+                username.setText(newValue);
+            }
+        });
+
+        clientListView.setOnMouseClicked(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event) {
+                try {
+                    client.udp.make_chatreq(clientListView.getSelectionModel().getSelectedItem().toString());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        sendButton.setOnMouseClicked(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event) {
+                try {
+                    client.updateChatMessages(clientListView.getSelectionModel().getSelectedItem().toString(), messageField.getText().toString());
+                    client.udp.make_chatmsg(clientListView.getSelectionModel().getSelectedItem().toString(), messageField.getText().toString());
+                    messageField.setText("");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        submitLog.setOnAction(e-> {
+            try {
+                client.login(userNameLog.getText(), passWordLog.getText());
+            } catch (IOException e1) {
+                e1.printStackTrace();
+            }
+            primaryStage.setScene(mainScene);
+        });
 
         logout.setOnMouseClicked(new EventHandler<MouseEvent>() {
             @Override
