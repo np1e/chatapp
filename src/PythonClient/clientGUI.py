@@ -2,6 +2,7 @@ from tkinter import *
 import client
 import sys
 import socket
+import server
 
 root = Tk()
 UDPPORT = None
@@ -26,6 +27,7 @@ def showWelcomeScreen():
 
 
 def login(username, password, tcpport, udpport):
+    server.start_server(tcpport)
     client.login(username, password, tcpport, udpport)
 
     
