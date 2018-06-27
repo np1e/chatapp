@@ -126,11 +126,16 @@ public class Server {
                 if(!userData.exists(username)) {
                     if (!password.equals(request.get("confirm").getAsString())) {
                         setLogs("passwords must match");
-                        sendConfirmation("register", "1", writer);
+                        sendConfirmation("register", "0", writer);
+                        break;
                     } else {
                         userData.insert(username, password);
+                        setLogs("successfull registration");
+                        sendConfirmation("register", "2", writer);
+                        break;
                     }
                 }
+                sendConfirmation("register", "1", writer);
                 break;
             case "logout":
                 username = request.get("username").getAsString();

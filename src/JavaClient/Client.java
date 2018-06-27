@@ -175,8 +175,6 @@ public class Client {
         Gson gson = new Gson();
         String loginString = gson.toJson(loginData);
         String response = sendText(loginString);
-        //loadList(response);
-
     }
 
     public void register(String username, String password, String confirm) throws IOException {
@@ -190,7 +188,24 @@ public class Client {
         Gson gson = new Gson();
         String registerString = gson.toJson(registerData);
         String response = sendText(registerString);
-        //loadList(response);
+
+        JsonObject json = parseJson(response);
+        // Received message
+        if(json.get("method").getAsString().equals("confirmation")) {
+            if(json.get("type").getAsString().equals("register")) {
+            int status = json.get("status").getAsInt();
+            if(status == 0) {
+                System.out.println("Passwords must match");
+            }
+            if(status == 1) {
+                System.out.println("Username already in use");
+
+            }
+            if(status == 2) {
+                System.out.println("Successful");
+            }
+            }
+        }
 
     }
 
