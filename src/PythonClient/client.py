@@ -1,5 +1,6 @@
 import socket
 import json
+import clientGUI
 
 IP = 'localhost'
 PORT = 8080
@@ -36,12 +37,19 @@ def makeRequest(data):
 def deliverData(receive):
     json_dict = json.loads(receive)
     if(json_dict["method"] == "confirmation"):
-        if(json_dict["status"] == 0):
-            print("failed authentification")
-        else:
-            print("successful login")
-    if(json_dict["method"] == "register"):
-        print("register")
+
+        if(json_dict["type"] == "login"):
+            if(json_dict["status"] == 0):
+                print("failed authentification")
+            else:
+                print("successful login")
+
+        if(json_dict["type"] == "register"):
+            if(json_dict["status"] == 0):
+                print("failed registration")
+            else:
+                print("successful registration")
+
     if(json_dict["method"] == "message"):
         print("message")
     if(json_dict["method"] == "chatrequest"):
