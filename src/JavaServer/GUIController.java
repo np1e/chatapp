@@ -2,13 +2,12 @@ package JavaServer;
 import javafx.application.Application;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
-import javafx.collections.MapChangeListener;
-import javafx.event.ActionEvent;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ListView;
-import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -19,14 +18,12 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-import java.io.*;
-import java.net.*;
-import java.util.Enumeration;
-
-public class ServerMain extends Application {
-    private Server server;
+public class GUIController extends Application {
+    private ServerController controller;
+    private Logger logger;
     private TextField port;
-    private TextArea logs;
+    private ListView<String> logsView;
+    private ObservableList<String> logs;
     private TextField commands;
     private ListView<User> userList;
 
@@ -38,27 +35,23 @@ public class ServerMain extends Application {
         root.setCenter(center);
         Scene scene =  new Scene(root, 800, 600);
 
-        logs = new TextArea();
-        logs.setEditable(false);
-        logs.setMouseTransparent(true);
-        logs.setFocusTraversable(false);
-        logs.setScrollTop(0);
+        logs = FXCollections.observableArrayList();
+        logger = new Logger("gui", logs);
+        controller = new ServerController(logger);
+        Server server = controller.getServer();
+
+        logsView = new ListView(logs);
+        logsView.setEditable(false);
+        logsView.setMouseTransparent(true);
+        logsView.setFocusTraversable(false);
 
         port = new TextField();
         commands = new TextField();
         Button start = new Button("Start Server");
         Button stop = new Button("Stop Server");
-        server = new Server();
 
-        userList = new ListView<User>(server.getActiveUsers());
+        userList = new ListView<User>(controller.getActiveUsers());
 
-        server.logsProperty().addListener(new ChangeListener<String>() {
-            @Override
-            public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
-                System.out.println(newValue);
-                logs.appendText(newValue + "\n");
-            }
-        });
 
 
 
@@ -66,7 +59,7 @@ public class ServerMain extends Application {
             @Override
             public void handle(KeyEvent event) {
                 if(event.getCode().equals(KeyCode.ENTER)) {
-                    server.doCommand(commands.getText());
+                    controller.doCommand(commands.getText());
                 }
             }
         });
@@ -74,23 +67,22 @@ public class ServerMain extends Application {
         start.setOnMouseClicked(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent event) {
-                server.start(port.getText());
+                controller.startServer(port.getText());
             }
         });
 
         stop.setOnMouseClicked(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent event) {
-                server.stop();
+                controller.stopServer();
             }
         });
 
-        getIps();
         VBox sideBar = new VBox();
         VBox rightBar = new VBox();
-        rightBar.getChildren().addAll(logs, commands);
+        rightBar.getChildren().addAll(logsView, commands);
         sideBar.getChildren().addAll(start, stop, port, userList);
-        VBox.setVgrow(logs, Priority.ALWAYS);
+        VBox.setVgrow(logsView, Priority.ALWAYS);
         center.getChildren().addAll(sideBar, rightBar);
 
 
@@ -102,25 +94,7 @@ public class ServerMain extends Application {
 
     public static void main(String[] args) {
         launch(args);
-
     }
 
-    public void getIps() {
-        Enumeration e = null;
-        try {
-            e = NetworkInterface.getNetworkInterfaces();
-        } catch (SocketException e1) {
-            e1.printStackTrace();
-        }
-        while(e.hasMoreElements())
-        {
-            NetworkInterface n = (NetworkInterface) e.nextElement();
-            Enumeration ee = n.getInetAddresses();
-            while (ee.hasMoreElements())
-            {
-                InetAddress i = (InetAddress) ee.nextElement();
-                System.out.println(i.getHostAddress());
-            }
-        }
-    }
+
 }

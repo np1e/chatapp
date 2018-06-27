@@ -4,6 +4,9 @@ import client
 import sys
 import socket
 
+root = Tk()
+UDPPORT = None
+TCPPORT = None
 
 class ClientGUI(tk.Tk):
     def __init__(self):
@@ -47,8 +50,8 @@ def showMainScreen():
 '''
 
 
-def login(username, password):
-    client.login(username, password)
+def login(username, password, tcpport, udpport):
+    client.login(username, password, tcpport, udpport)
 
 
 def register(username, password, confirm):
@@ -56,7 +59,7 @@ def register(username, password, confirm):
 
 
 class LoginScreen(tk.Frame):
-
+    global UDPPORT,TCPPORT
     def __init__(self, root):
         tk.Frame.__init__(self, root)
         usernameLabel = tk.Label(self, text="Username")
@@ -69,10 +72,11 @@ class LoginScreen(tk.Frame):
 
         usernameEntry.grid(row=0, column=1)
         passwordEntry.grid(row=1, column=1)
+        
+        backButton = tk.Button(self, text="Back", command=showWelcomeScreen).grid(row=2, column = 0)
+        loginButton = tk.Button(self, text="Login", command= lambda: login(username.get(), password.get(), TCPPORT, UDPPORT)).grid(row=2, column = 1)
 
-        backButton = tk.Button(self, text="Back", command=lambda: root.switch_frame(WelcomeScreen))
-        # Button(self, text="Login", command= lambda: login(username.get(), password.get()))
-        loginButton = tk.Button(self, text="Login", command=lambda: root.switch_frame(MainScreen))
+        root.switch_frame(MainScreen)
 
         backButton.grid(row=2, column=0)
         loginButton.grid(row=2, column = 1)
@@ -152,9 +156,10 @@ def on_closing():
     client.close()
     clientGUI.destroy()
 
-
 if __name__ == "__main__":
 
+    UDPPORT = sys.argv[1]
+    TCPPORT = sys.argv[2]
     clientGUI = ClientGUI()
     if 'clientSocket' not in globals():
         clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

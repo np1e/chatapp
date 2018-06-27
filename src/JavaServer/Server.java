@@ -1,7 +1,5 @@
 package JavaServer;
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.*;
 import com.sun.javafx.collections.ObservableMapWrapper;
 import com.sun.xml.internal.bind.v2.TODO;
 import javafx.application.Platform;
@@ -18,10 +16,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.time.ZonedDateTime;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Server {
@@ -32,6 +27,9 @@ public class Server {
     private String port;
     private ObservableList<User> activeUsersObservable;
     private Data userData;
+    private Logger logger;
+    private TCPClient client;
+    private String input;
 
 
     public ObservableList<User> getActiveUsers() {
@@ -39,24 +37,29 @@ public class Server {
     }
 
     ServerSocket welcomeSocket;
-    public Server() {
+    public Server(Logger l, ObservableList list, TCPClient client) {
 
+        this.client = client;
         userData = new Data();
         logs = new SimpleStringProperty();
+        logger = l;
         //db = new PostgreSQLJDBC();
-        activeUsersObservable = FXCollections.observableArrayList();
+        activeUsersObservable = list;
 
     }
 
     public void start(final String port) {
 
         try {
-            welcomeSocket = new ServerSocket(Integer.parseInt(port));
+            welcomeSocket = new ServerSocket(8080);
+
             setLogs("Server started on " + welcomeSocket.getInetAddress().getLocalHost().getHostAddress() + ":" + welcomeSocket.getLocalPort());
+            System.out.println("1");
             while(true) {
                 try {
                     setLogs("Waiting for client...");
                     final Socket connectionSocket = welcomeSocket.accept();
+
                     setLogs("Client connected.");
 
                     final Thread thread = new Thread(new Runnable() {
@@ -67,7 +70,10 @@ public class Server {
                             try {
                                 final BufferedReader reader = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
                                 final BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(connectionSocket.getOutputStream()));
-                                handleRequest(connectionSocket, reader, writer);
+                                while((input = reader.readLine()) != null) {
+                                    handleRequest(connectionSocket, input, writer);
+                                }
+                                setLogs("Request handled");
                             } catch (IOException e) {
                                 setLogs(e.getMessage());
                             }
@@ -87,38 +93,68 @@ public class Server {
     }
 
     // handles the request from a client
-    private void handleRequest(Socket connectionSocket, BufferedReader reader, BufferedWriter writer) {
+    private void handleRequest(Socket connectionSocket, String jsonString, BufferedWriter writer) {
 
-        com.google.gson.JsonObject request = parseJson(reader);
+        JsonObject request = parseJson(jsonString);
         System.out.println("Json parsed");
 
-        String username = request.get("username").getAsString();
-        String password = request.get("password").getAsString();
+        String username;
+        String password;
+        String port;
 
         switch(request.get("method").getAsString()){
             case "login":
+                username = request.get("username").getAsString();
+                password = request.get("password").getAsString();
+                port = request.get("tcpport").getAsString();
                 setLogs("requesting login");
                 if(checkAuthentication(username,password)) {
-                    activeUsersObservable.add(new User(username, connectionSocket.getInetAddress().getHostAddress()));
+                    activeUsersObservable.add(new User(username, connectionSocket.getInetAddress().getHostAddress(), Integer.parseInt(port)));
                     setLogs(username + " logged in successfully.");
+                    sendConfirmation("login", "1", writer);
                     sendActiveUserList(writer);
                 } else {
+                    sendConfirmation("login", "0", writer);
                     setLogs("Authentication failed.");
                 }
 
                 break;
             case "register":
+                username = request.get("username").getAsString();
+                password = request.get("password").getAsString();
                 setLogs("requesting register");
                 if(!userData.exists(username)) {
                     if (!password.equals(request.get("confirm").getAsString())) {
                         setLogs("passwords must match");
+                        sendConfirmation("register", "1", writer);
                     } else {
                         userData.insert(username, password);
                     }
-
                 }
+                break;
+            case "logout":
+                username = request.get("username").getAsString();
+                setLogs("requesting logout");
+                for(User u: activeUsersObservable) {
+                    if(u.toString().equals(username)) {
+                        activeUsersObservable.remove(u);
+                        setLogs("User <" + username + "> logged out");
+                        sendConfirmation("logout", "1", writer);
+                        sendActiveUserList(writer);
+                        break;
+                    }
+                }
+
         }
 
+    }
+
+    private void sendConfirmation(String method, String status, BufferedWriter writer) {
+        JsonObject json = new JsonObject();
+        json.addProperty("method", "confirmation");
+        json.addProperty("type", method);
+        json.addProperty("status", status);
+        sendMessage(toJson(json), writer);
     }
 
     private boolean checkAuthentication(String username, String password_hash) {
@@ -127,47 +163,59 @@ public class Server {
 
     }
 
-    private void sendActiveUserList(BufferedWriter writer) {
+    private String toJson(JsonObject json) {
         Gson gson = new Gson();
-        Map<String,String> jsonMap = new HashMap<>();
-        jsonMap.put("method","data");
-        jsonMap.put("data",gson.toJson(activeUsersObservable));
-        String json = gson.toJson(jsonMap);
-        System.out.println("json = " + json);
+        return gson.toJson(json);
+    }
+
+    private void sendActiveUserList(BufferedWriter writer) {
+        JsonArray users = new JsonArray();
+        JsonObject json = new JsonObject();
+        json.addProperty("method","data");
+        for(User u : activeUsersObservable) {
+            JsonObject user = new JsonObject();
+            user.addProperty("username", u.toString());
+            user.addProperty("ip", u.getIp());
+            users.add(user);
+        }
+        json.add("data",users);
+
+        String jsonString = toJson(json);
+        System.out.println("json = " + jsonString);
+        //sendMessage(jsonString, writer);
+        sendToAll(jsonString);
+    }
+
+
+    private void sendToAll(String jsonString) {
+        client.sendToAll(jsonString);
+    }
+
+    private void sendMessage(String jsonString, BufferedWriter writer) {
+        jsonString += "\n";
         try {
-            writer.write(json, 0, json.length());
+            writer.write(jsonString, 0, jsonString.length());
             writer.flush();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-
-
-    private void setLogs(String log) {
-        SimpleDateFormat curTime = new SimpleDateFormat("dd-MM-yyy HH:mm:ss.SSS");
-        Date now = new Date();
-        String timeStamp = curTime.format(now);
-        String string = "[" + timeStamp + "]" + "\n\t" + log;
-        logs.set(string);
+    private String addTerminator(String message) {
+        return message + "\n";
     }
 
 
-    private JsonObject parseJson(BufferedReader reader) {
 
-        StringBuilder sb = new StringBuilder();
-        String jsonString = null;
-        try {
-            jsonString = reader.readLine();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        System.out.println(jsonString);
-        JsonParser parser = new com.google.gson.JsonParser();
+    private void setLogs(String log) {
+        logger.log(log);
+    }
+
+
+    private JsonObject parseJson(String jsonString) {
+        JsonParser parser = new JsonParser();
         JsonObject json = parser.parse(jsonString).getAsJsonObject();
-        System.out.println(json);
         return json;
-
     }
 
 
@@ -188,10 +236,5 @@ public class Server {
         }
     }
 
-    /**@TODO implement
-     *
-     * @param text
-     */
-    public void doCommand(String text) {
-    }
+
 }
