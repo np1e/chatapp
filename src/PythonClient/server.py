@@ -1,36 +1,42 @@
 import json
-import socket
-import User
+from socket import *
+from data import User
 from threading import Thread
 
-PORT_TCP = None
 IP_TCP = '127.0.0.1'
 BUFFER_SIZE = 1024
-active_users = []
+
+class Server:
+    def __init__(self, tcpport, controller):
+        self.active_users = []
+        self._tcpport = int(tcpport)
+        self.sock = socket(AF_INET, SOCK_STREAM)
+        self.sock.bind((IP_TCP, self._tcpport))
+        self.sock.listen(1)
+        self.queue = controller.queue
+        self.controller = controller
+        thread = Thread(target=self.start_server, args=(self.sock, self._tcpport,))
+        thread.start()
 
 
-def start_server(tcpport):
-    global PORT_TCP
-    PORTTCP = int(tcpport)
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind((IP_TCP, PORTTCP))
-    s.listen(1)
+    def start_server(self, sock, tcpport):
+        while 1:
+            connsock, addr = sock.accept()
+            thread = Thread(target=self.handle_request, args=(connsock, addr))
+            thread.start()
 
-    conn, addr = s.accept()
-    print("Connection address:", addr)
-    thread = Thread(target=handle_request, args=(conn, addr))
-    thread.start()
+    def handle_request(self, sock, addr):
+        while 1:
+            data = sock.recv(BUFFER_SIZE)
+            if not data: break
+            self.loadlist(data.decode("utf-8"))
 
-def handle_request(conn, addr):
-    while 1:
-        data = conn.recv(BUFFER_SIZE)
-        if not data: break
-        print("received data:", data)
-        loadList(data)
-
-
-def loadList(data):
-    jsonObj = json.loads(data)
-    for u in jsonObj:
-        print(u)
-
+    def loadlist(self, data):
+        self.active_users=[]
+        json_dict = json.loads(data)
+        for k in json_dict["data"]:
+            user = User(k['username'], k['ip'])
+            self.active_users.append(user)
+        gui_dict = {"name":"active_users", "data": self.active_users}
+        self.queue.put(gui_dict)
+        print(gui_dict)
