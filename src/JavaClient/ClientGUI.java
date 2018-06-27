@@ -34,7 +34,7 @@ public class ClientGUI extends Application{
         clientListView.setOnMouseClicked(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent event) {
-                client.sendChatRequest(clientListView.getSelectionModel().getSelectedItem()));
+                client.sendChatRequest(clientListView.getSelectionModel().getSelectedItem().toString());
             }
         });
 

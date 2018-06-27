@@ -1,15 +1,30 @@
-from tkinter import *
+import tkinter as tk
+from tkinter import Entry
 import client
 import sys
 import socket
 
-root = Tk()
 
+class ClientGUI(tk.Tk):
+    def __init__(self):
+        tk.Tk.__init__(self)
+        self._frame = None
+        self.switch_frame(WelcomeScreen)
 
+    def switch_frame(self, frame_class):
+        """Destroys current frame and replaces it with a new one."""
+        new_frame = frame_class(self)
+        if self._frame is not None:
+            self._frame.destroy()
+        self._frame = new_frame
+        self._frame.pack()
+
+'''
 def showLoginScreen():
     welcomeScreen.pack_forget()
     loginScreen = LoginScreen(root)
     loginScreen.pack()
+
 
 def showRegisterScreen():
     welcomeScreen.pack_forget()
@@ -17,8 +32,8 @@ def showRegisterScreen():
     registerScreen = RegisterScreen(root)
     registerScreen.pack()
 
-def showWelcomeScreen():
 
+def showWelcomeScreen():
     children = root.children.values()
     for child in children:
         child.pack_forget()
@@ -26,72 +41,125 @@ def showWelcomeScreen():
     welcomeScreen.pack()
 
 
+def showMainScreen():
+    loginScreen.pack_forget()
+    mainScreen.pack()
+'''
+
 
 def login(username, password):
     client.login(username, password)
 
-    
+
 def register(username, password, confirm):
     client.register(username, password, confirm)
 
 
-class LoginScreen(Frame):
+class LoginScreen(tk.Frame):
 
     def __init__(self, root):
-        super().__init__(root)
-        Label(self, text="Username").grid(row=0)
-        Label(self, text="Password").grid(row=1)
-        username = Entry(self)
-        password = Entry(self, show='*')
+        tk.Frame.__init__(self, root)
+        usernameLabel = tk.Label(self, text="Username")
+        passwordLabel = tk.Label(self, text="Password")
+        usernameEntry = tk.Entry(self)
+        passwordEntry = tk.Entry(self, show='*')
 
-        username.grid(row=0, column=1)
-        password.grid(row=1, column=1)
-        
-        Button(self, text="Back", command=showWelcomeScreen).grid(row=2, column = 0)
-        Button(self, text="Login", command= lambda: login(username.get(), password.get())).grid(row=2, column = 1)
+        usernameLabel.grid(row=0)
+        passwordLabel.grid(row=1)
 
+        usernameEntry.grid(row=0, column=1)
+        passwordEntry.grid(row=1, column=1)
 
-class RegisterScreen(Frame):
+        backButton = tk.Button(self, text="Back", command=lambda: root.switch_frame(WelcomeScreen))
+        # Button(self, text="Login", command= lambda: login(username.get(), password.get()))
+        loginButton = tk.Button(self, text="Login", command=lambda: root.switch_frame(MainScreen))
 
-    def __init__(self, root):
-        super().__init__(root)
-        Label(self, text="Username").grid(row=0)
-        Label(self, text="Password").grid(row=1)
-        Label(self, text="Confirm Password").grid(row=2)
-
-        username = Entry(self)
-        password = Entry(self, show='*')
-        confirm = Entry(self, show='*')
-
-        username.grid(row=0, column=1)
-        password.grid(row=1, column=1)
-        confirm.grid(row=2, column=1)
-
-        Button(self, text="Back", command=showWelcomeScreen).grid(row=3, column = 0)
-        Button(self, text="Register", command= lambda: register(username.get(), password.get(), confirm.get())).grid(row=3, column = 1)
+        backButton.grid(row=2, column=0)
+        loginButton.grid(row=2, column = 1)
 
 
-class WelcomeScreen(Frame):
+class RegisterScreen(tk.Frame):
 
     def __init__(self, root):
-        super().__init__(root)
-        entry = Label(self, text="Register or login to chat.").pack()
-        register = Button(self, text="Register", command=showRegisterScreen).pack(side="right")
-        login = Button(self, text="Login", command=showLoginScreen).pack(side="left")
+        tk.Frame.__init__(self, root)
+
+        usernameLabel = tk.Label(self, text="Username")
+        passwordLabel = tk.Label(self, text="Password")
+        confirmLabel = tk.Label(self, text="Confirm Password")
+
+        usernameLabel.grid(row=0)
+        passwordLabel.grid(row=1)
+        confirmLabel.grid(row=2)
+
+        usernameEntry = tk.Entry(self)
+        passwordEntry = tk.Entry(self, show='*')
+        confirmEntry = tk.Entry(self, show='*')
+
+        usernameEntry.grid(row=0, column=1)
+        passwordEntry.grid(row=1, column=1)
+        confirmEntry.grid(row=2, column=1)
+
+        backButton = tk.Button(self, text="Back", command=lambda: root.switch_frame(WelcomeScreen))
+        registerButton = tk.Button(self, text="Register", command=lambda: root.switch_frame(MainScreen))
+        #registerButton = tk.Button(self, text="Register",
+        #                          command=lambda: register(usernameEntry.get(),
+        #                                                   passwordEntry.get(),
+        #                                                   confirmEntry.get()))
+
+        backButton.grid(row=3, column=0)
+        registerButton.grid(row=3, column = 1)
+
+
+class WelcomeScreen(tk.Frame):
+
+    def __init__(self, root):
+        tk.Frame.__init__(self, root)
+
+        entry = tk.Label(self, text="Register or login to chat.")
+        register = tk.Button(self, text="Register", command=lambda: root.switch_frame(RegisterScreen))
+        login = tk.Button(self, text="Login", command=lambda: root.switch_frame(LoginScreen))
+
+        entry.pack()
+        register.pack(side="right")
+        login.pack(side="left")
+
+
+class MainScreen(tk.Frame):
+    def __init__(self, root):
+        tk.Frame.__init__(self, root)
+
+        leftFrame = tk.Frame(self)
+        rightFrame = tk.Frame(self)
+
+        userList = tk.Listbox(leftFrame)
+        messageArea = tk.Message(rightFrame)
+
+        messageBoxFrame = tk.Frame(rightFrame)
+        sendButton = tk.Button(messageBoxFrame, text="Send")
+        messageTextField = tk.Text(messageBoxFrame, height=5, width=40)
+
+        sendButton.pack()
+        messageTextField.pack()
+
+        userList.pack()
+        messageArea.pack()
+        messageBoxFrame.pack()
+
+        leftFrame.pack(side="left", fill="both", expand="true")
+        rightFrame.pack(side="right")
 
 def on_closing():
     client.close()
-    root.destroy()
+    clientGUI.destroy()
 
 
 if __name__ == "__main__":
 
-    welcomeScreen = WelcomeScreen(root)
-    showWelcomeScreen()
+    clientGUI = ClientGUI()
     if 'clientSocket' not in globals():
         clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         connected = False
     ip = "localhost"
     port = 8080
-    root.protocol("WM_DELETE_WINDOW", on_closing)
-    root.mainloop()
+    clientGUI.protocol("WM_DELETE_WINDOW", on_closing)
+    clientGUI.mainloop()
