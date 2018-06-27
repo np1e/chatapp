@@ -6,6 +6,7 @@ import socket
 
 UDPPORT = None
 TCPPORT = None
+window = None
 
 class ClientGUI(tk.Tk):
     def __init__(self):
@@ -48,9 +49,10 @@ def showMainScreen():
     mainScreen.pack()
 '''
 
-
 def login(username, password, tcpport, udpport):
-    client.login(username, password, tcpport, udpport)
+    if client.login(username, password, tcpport, udpport):
+        print('lolol')
+        window.switch_frame(MainScreen)
 
 
 def register(username, password, confirm):
@@ -60,6 +62,8 @@ def register(username, password, confirm):
 class LoginScreen(tk.Frame):
     global UDPPORT,TCPPORT
     def __init__(self, root):
+        global window
+        window = root
         tk.Frame.__init__(self, root)
         usernameLabel = tk.Label(self, text="Username")
         passwordLabel = tk.Label(self, text="Password")
@@ -150,6 +154,8 @@ class MainScreen(tk.Frame):
 
         leftFrame.pack(side="left", fill="both", expand="true")
         rightFrame.pack(side="right")
+
+
 
 def on_closing():
     client.close()

@@ -16,7 +16,7 @@ def login(username, password, tcpport, udpport):
         'tcpport' : tcpport,
         'udpport' : udpport
     }
-    makeRequest(data)
+    return makeRequest(data)
 
 
 def register(username, password, confirm):
@@ -27,12 +27,12 @@ def register(username, password, confirm):
         "password" : password,
         "confirm": confirm
     }
-    makeRequest(data)
+    return makeRequest(data)
 
 def makeRequest(data):
     json_string = json.dumps(data) + "\n"
     clientSocket.send(json_string.encode("utf-8"))
-    deliverData(clientSocket.recv(1024))
+    return deliverData(clientSocket.recv(1024))
 
 def deliverData(receive):
     json_dict = json.loads(receive)
@@ -41,8 +41,10 @@ def deliverData(receive):
         if(json_dict["type"] == "login"):
             if(json_dict["status"] == 0):
                 print("failed authentification")
+                return False
             else:
                 print("successful login")
+                return True
 
         if(json_dict["type"] == "register"):
             if(json_dict["status"] == 0):
@@ -54,6 +56,8 @@ def deliverData(receive):
         print("message")
     if(json_dict["method"] == "chatrequest"):
         print("chatrequest")
+
+    return False
 
 def close():
     clientSocket.close()
