@@ -107,11 +107,12 @@ public class ClientGUI extends Application{
 
         // Reg
         TextField userNameReg = new TextField();
-        TextField emailReg = new TextField();
+        TextField passWordReg = new PasswordField();
+        TextField confirmReg = new PasswordField();
         Button submitReg = new Button("Registrieren");
         submitReg.setOnAction(e->primaryStage.setScene(mainScene));
         VBox registration = new VBox();
-        registration.getChildren().addAll(userNameReg, emailReg, submitReg);
+        registration.getChildren().addAll(userNameReg, passWordReg, confirmReg, submitReg);
 
         center.getChildren().addAll(login, registration);
         loginRoot.setCenter(center);
@@ -143,6 +144,14 @@ public class ClientGUI extends Application{
 
 
 
+
+        submitReg.setOnAction(e-> {
+            try {
+                client.register(userNameReg.getText(), passWordReg.getText(), confirmReg.getText());
+            } catch (IOException e1) {
+                e1.printStackTrace();
+            }
+        });
 
         client.getUsername().addListener(new ChangeListener<String>() {
             @Override

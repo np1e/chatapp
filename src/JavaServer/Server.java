@@ -126,6 +126,7 @@ public class Server {
                 if(!userData.exists(username)) {
                     if (!password.equals(request.get("confirm").getAsString())) {
                         setLogs("passwords must match");
+                        sendConfirmation("register", "1", writer);
                     } else {
                         userData.insert(username, password);
                     }

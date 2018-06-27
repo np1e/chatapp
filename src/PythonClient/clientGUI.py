@@ -4,7 +4,8 @@ import sys
 import socket
 
 root = Tk()
-
+UDPPORT = None
+TCPPORT = None
 
 def showLoginScreen():
     welcomeScreen.pack_forget()
@@ -13,22 +14,19 @@ def showLoginScreen():
 
 def showRegisterScreen():
     welcomeScreen.pack_forget()
-
     registerScreen = RegisterScreen(root)
     registerScreen.pack()
 
 def showWelcomeScreen():
-
     children = root.children.values()
     for child in children:
         child.pack_forget()
-
     welcomeScreen.pack()
 
 
 
-def login(username, password):
-    client.login(username, password)
+def login(username, password, tcpport, udpport):
+    client.login(username, password, tcpport, udpport)
 
     
 def register(username, password, confirm):
@@ -36,6 +34,7 @@ def register(username, password, confirm):
 
 
 class LoginScreen(Frame):
+    global UDPPORT,TCPPORT
 
     def __init__(self, root):
         super().__init__(root)
@@ -48,7 +47,7 @@ class LoginScreen(Frame):
         password.grid(row=1, column=1)
         
         Button(self, text="Back", command=showWelcomeScreen).grid(row=2, column = 0)
-        Button(self, text="Login", command= lambda: login(username.get(), password.get())).grid(row=2, column = 1)
+        Button(self, text="Login", command= lambda: login(username.get(), password.get(), TCPPORT, UDPPORT)).grid(row=2, column = 1)
 
 
 class RegisterScreen(Frame):
@@ -83,9 +82,10 @@ def on_closing():
     client.close()
     root.destroy()
 
-
 if __name__ == "__main__":
 
+    UDPPORT = sys.argv[1]
+    TCPPORT = sys.argv[2]
     welcomeScreen = WelcomeScreen(root)
     showWelcomeScreen()
     if 'clientSocket' not in globals():

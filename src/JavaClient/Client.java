@@ -179,6 +179,21 @@ public class Client {
 
     }
 
+    public void register(String username, String password, String confirm) throws IOException {
+        // Request login at server
+        this.username.set(username);
+        Map<String, String> registerData = new HashMap();
+        registerData.put("method", "register");
+        registerData.put("username", username);
+        registerData.put("password", password);
+        registerData.put("confirm", confirm);
+        Gson gson = new Gson();
+        String registerString = gson.toJson(registerData);
+        String response = sendText(registerString);
+        //loadList(response);
+
+    }
+
     private void loadList(String response) {
         JsonObject json = parseJson(response);
         JsonArray data = json.getAsJsonArray("data");

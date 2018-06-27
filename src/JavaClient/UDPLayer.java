@@ -184,7 +184,7 @@ public class UDPLayer {
     public void make_ack() {
         Map pkt_map = new HashMap();
         pkt_map.put("method", "ack");
-        pkt_map.put("serial", serial);
+        pkt_map.put("serial", String.valueOf(serial));
 
         Gson gson = new Gson();
         byte[] bytes = gson.toJson(pkt_map).getBytes();
@@ -200,7 +200,7 @@ public class UDPLayer {
     public void make_nak() {
         Map pkt_map = new HashMap();
         pkt_map.put("method", "nak");
-        pkt_map.put("serial", serial);
+        pkt_map.put("serial", String.valueOf(serial));
 
         Gson gson = new Gson();
         byte[] bytes = gson.toJson(pkt_map).getBytes();
