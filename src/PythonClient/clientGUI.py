@@ -3,6 +3,7 @@ from tkinter import Entry
 import client
 import sys
 import socket
+import server
 
 UDPPORT = None
 TCPPORT = None
@@ -49,7 +50,10 @@ def showMainScreen():
     mainScreen.pack()
 '''
 
+
 def login(username, password, tcpport, udpport):
+    server.start_server(tcpport)
+    client.login(username, password, tcpport, udpport)
     if client.login(username, password, tcpport, udpport):
         print('lolol')
         window.switch_frame(MainScreen)
@@ -154,8 +158,6 @@ class MainScreen(tk.Frame):
 
         leftFrame.pack(side="left", fill="both", expand="true")
         rightFrame.pack(side="right")
-
-
 
 def on_closing():
     client.close()
