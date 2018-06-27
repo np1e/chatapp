@@ -114,6 +114,7 @@ public class Server {
                     sendConfirmation("login", "1", writer);
                     sendActiveUserList(writer);
                 } else {
+                    sendConfirmation("login", "0", writer);
                     setLogs("Authentication failed.");
                 }
 

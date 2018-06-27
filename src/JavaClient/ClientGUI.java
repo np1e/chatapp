@@ -128,6 +128,7 @@ public class ClientGUI extends Application{
                             public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
                                 if(oldValue == false && newValue == true) {
                                     client.udp.make_chatconf();
+                                    messageField.setDisable(false);
                                 }
                             }
                         });
@@ -150,12 +151,13 @@ public class ClientGUI extends Application{
             }
         });
 
+
+
         clientListView.setOnMouseClicked(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent event) {
                 try {
                     client.udp.make_chatreq();
-                    messageField.setDisable(false);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
