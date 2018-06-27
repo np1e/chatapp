@@ -4,7 +4,6 @@ import client
 import sys
 import socket
 
-root = Tk()
 UDPPORT = None
 TCPPORT = None
 
@@ -73,10 +72,8 @@ class LoginScreen(tk.Frame):
         usernameEntry.grid(row=0, column=1)
         passwordEntry.grid(row=1, column=1)
         
-        backButton = tk.Button(self, text="Back", command=showWelcomeScreen).grid(row=2, column = 0)
-        loginButton = tk.Button(self, text="Login", command= lambda: login(username.get(), password.get(), TCPPORT, UDPPORT)).grid(row=2, column = 1)
-
-        root.switch_frame(MainScreen)
+        backButton = tk.Button(self, text="Back", command= lambda: root.switch_frame(WelcomeScreen))
+        loginButton = tk.Button(self, text="Login", command= lambda: login(usernameEntry.get(), passwordEntry.get(), TCPPORT, UDPPORT))
 
         backButton.grid(row=2, column=0)
         loginButton.grid(row=2, column = 1)
@@ -104,7 +101,9 @@ class RegisterScreen(tk.Frame):
         confirmEntry.grid(row=2, column=1)
 
         backButton = tk.Button(self, text="Back", command=lambda: root.switch_frame(WelcomeScreen))
-        registerButton = tk.Button(self, text="Register", command=lambda: root.switch_frame(MainScreen))
+        registerButton = tk.Button(self, text="Register", command=lambda: register(usernameEntry.get(),
+                                                                                   passwordEntry.get(),
+                                                                                   confirmEntry.get()))
         #registerButton = tk.Button(self, text="Register",
         #                          command=lambda: register(usernameEntry.get(),
         #                                                   passwordEntry.get(),
