@@ -1,5 +1,7 @@
 import socket
 import json
+import time
+import datetime
 
 IP = 'localhost'
 PORT = 8080
@@ -115,3 +117,7 @@ class Client:
 
         make_pkt(self.serial, pkt_dict)
 
+    def get_timestamp(self):
+        t = time.time()
+        st = datetime.datetime.fromtimestamp(t).strftime('%d-%m-%Y %H:%M:%S')
+        return st
