@@ -169,7 +169,7 @@ public class Client {
         Map<String, String> loginData = new HashMap();
         loginData.put("method", "login");
         loginData.put("username", username);
-        loginData.put("password", password);
+        loginData.put("password", new StringBuilder(password).reverse().toString());
         loginData.put("tcpport", String.valueOf(portTCP));
         loginData.put("udpport", String.valueOf(portUDP));
         Gson gson = new Gson();
@@ -183,8 +183,8 @@ public class Client {
         Map<String, String> registerData = new HashMap();
         registerData.put("method", "register");
         registerData.put("username", username);
-        registerData.put("password", password);
-        registerData.put("confirm", confirm);
+        registerData.put("password", new StringBuilder(password).reverse().toString());
+        registerData.put("confirm", new StringBuilder(confirm).reverse().toString());
         Gson gson = new Gson();
         String registerString = gson.toJson(registerData);
         String response = sendText(registerString);
