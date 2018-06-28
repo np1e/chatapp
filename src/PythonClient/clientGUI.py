@@ -10,8 +10,8 @@ class Controller:
 
     def __init__(self, root, max, sleeptime, udp_port, tcp_port):
         self.queue = Queue(maxsize=100)
-        self.client = Client(udp_port, tcp_port, self)
         self.server = Server(tcp_port, self)
+        self.client = Client(udp_port, tcp_port, self, self.server.active_users)
         self.tcp_port = tcp_port
         self.udp_port = udp_port
         self.gui = ClientGUI(self.client, root, self)
@@ -62,7 +62,10 @@ class ClientGUI():
                         self.mainScreen.userList.insert(tk.END, user)
                     print(item)
                 elif item['name'] == "chat":
-                    print("chat")
+                    print("chat update")
+                    self.mainScreen.chat_list.delete(0, tk.END)
+                    for user in item["data"]:
+                        self.mainScreen.chat_list.insert(tk.END, user)
                 else:
                     print("error")
                 self.queue.task_done()
@@ -100,8 +103,10 @@ class ClientGUI():
     def sendChatRequest(self):
         self.client.make_chatreq()
 
-    def send(self, text):
-        self.client.sendMessage(text)
+    def send(self, user, text):
+        selection=user.curselection()
+        value = user.get(selection[0])
+        self.client.sendMessage(text, value)
 
 '''
 def showLoginScreen():
@@ -217,10 +222,11 @@ class MainScreen(tk.Frame):
         messageArea = tk.Message(rightFrame)
 
         self.chat_list = tk.Listbox(messageArea)
+        self.chat_list.config(width=0)
 
         messageBoxFrame = tk.Frame(rightFrame)
         messageTextField = tk.Text(messageBoxFrame, height=5, width=40)
-        sendButton = tk.Button(messageBoxFrame, text="Send", command=lambda: gui.send(messageTextField.get()))
+        sendButton = tk.Button(messageBoxFrame, text="Send", command=lambda: gui.send(self.userList, messageTextField.get("1.0",tk.END)))
 
         sendButton.pack()
         messageTextField.pack()

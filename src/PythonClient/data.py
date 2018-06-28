@@ -14,7 +14,11 @@ class User():
 
 class Message:
 
-    def __init__(self, username, msg):
+    def __init__(self, username, timestamp, msg):
         self._username = username
         self._msg = msg
+        self.timestamp = timestamp
+
+    def __repr__(self):
+        return "{}\n{}:\t{}".format(self.timestamp, self._username,self._msg)
 

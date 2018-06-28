@@ -12,29 +12,16 @@ connected = False
 clientSocket = socket(AF_INET, SOCK_STREAM)
 
 class Client:
-    def __init__(self, udp_port, tcp_port, controller):
+    def __init__(self, udp_port, tcp_port, controller, active_users):
         self.serialized_chat = {}
         self.queue = controller.queue
         self.udp_port = udp_port
         self.tcp_port = tcp_port
         self.controller = controller
-        self.active_users = []
+        self.active_users = active_users
         self.serial = 0
         self.udp_rcv_starter(udp_port)
-
-    def process(self):
-        while self.queue.qsize():
-            try:
-                item = self.queue.get()
-                if item['name'] == "active_users":
-                    for user in item["data"]:
-                        self.active_users.append(User(user["username"], user["ip"]))
-                    print(item)
-                self.queue.task_done()
-            except Queue.Empty:
-                pass
-
-        self.root.after(1000, self.process)
+        self.request = False
 
     def login(self, username, password, tcpport, udpport):
         self.connect(IP,PORT)
@@ -67,7 +54,7 @@ class Client:
         }
         return self.makeRequest(data)
 
-    def sendMessage(self, msg):
+    def sendMessage(self, msg, username):
         if(self.request):
             if msg in ['y', 'Y', 'yes', 'Yes']:
                 self.make_chatconf()
@@ -75,12 +62,9 @@ class Client:
             elif msg in ['n', 'N', 'no', 'No']:
                 self.make_chatdecl()
                 self.request = False
-        #serverName = "localhost"
-        #serverPort = 12000
-        #clientSocket = socket(AF_INET, SOCK_DGRAM)
-        #message = raw_input("Input lowercase sentence: ")
-        #clientSocket.sendto((message), (serverName, serverPort))
-        #clientSocket.close()
+        else:
+            self.make_chatmsg(msg)
+            self.updateChatMessages(username, msg, True)
 
     def makeRequest(self, data):
         json_string = json.dumps(data) + "\n"
@@ -106,26 +90,44 @@ class Client:
                     print("successful registration")
 
         if(json_dict["method"] == "message"):
-
+            self.updateChatMessages(json_dict["username"], json_dict["message"], False)
+            self.serial = json_dict["serial"]
+            self.make_ack()
             print("message")
         if(json_dict["method"] == "request"):
             self.request = True
-            self.updateChatMessages(json_dict["username"], "Chatanfrage von User ", json_dict["username"], "erhalten.")
-            self.updateChatMessages("Annehmen?")
+            self.updateChatMessages(json_dict["username"], "Chatanfrage von User {} erhalten.".format(json_dict["username"]), False)
+            self.updateChatMessages(json_dict["username"], "Annehmen?", False)
+            self.serial = json_dict["serial"]
+            self.make_ack()
             print("chatrequest")
         if(json_dict["method"] == "confirm"):
             for user in self.active_users:
                 if user._username == json_dict["username"]:
                     user.confirmed = True
-                    self.updateChatMessages(user._username, "Chatanfrage wurde akzeptiert!")
+                    self.request = False
+                    self.updateChatMessages(user._username, "Chatanfrage wurde akzeptiert!", False)
+            self.serial = json_dict["serial"]
+            self.make_ack()
             print("chatconfirm")
         return False
 
-    def updateChatMessages(self, username, msg):
+    def updateChatMessages(self, username, msg, sended):
+        print(self.active_users)
         for user in self.active_users:
-            if user._username == username:
-                user._chat.append(Message(msg, self.get_timestamp(), user))
-                self.queue.put(user._chat)
+            if sended:
+                if user._username == username:
+                    user._chat.append(Message(self.username, self.get_timestamp(), msg))
+            else:
+                if user._username == username:
+                    user._chat.append(Message(username, self.get_timestamp(), msg))
+
+            gui_dict = {"name":"chat", "data": user._chat}
+            self.queue.put(gui_dict)
+            print(gui_dict)
+
+
+
 
     def close(self):
         clientSocket.close()
@@ -160,7 +162,9 @@ class Client:
             json_dict = json.loads(message)
             print ("Received from Client: ", json_dict)
 
-            if json_dict["method"] == "confirm":
+
+            #if json_dict["method"] == "confirm":
+            if "hashcode" in json_dict.keys():
                 print("confirm")
                 if not self.udp_corrupted(json_dict):
                     print("not corrupted")
@@ -216,7 +220,9 @@ class Client:
         pkt_dict.update({"username": self.username})
         pkt_dict.update({"message": content})
         pkt_dict.update({"timetamp": self.get_timestamp()})
-        pkt_dict.update({"serial": ++self.serial})
+        print(type(self.serial))
+        self.serial = int(self.serial) + 1
+        pkt_dict.update({"serial": str(self.serial)})
         pkt_dict.update({"hashcode": self.java_hashcode(pkt_dict)})
         self.make_pkt(pkt_dict)
 
@@ -233,20 +239,20 @@ class Client:
 
     def make_chatconf(self):
         pkt_dict = {}
-        pkt_dict.update("method", "confirm")
-        pkt_dict.update("username", self.username)
-        pkt_dict.update("timestamp", self.get_timestamp())
-        pkt_dict.update("serial", ++self.serial)
-        pkt_dict.update("hashcode", self.hashcode_java(pkt_dict))
+        pkt_dict.update({"method": "confirm"})
+        pkt_dict.update({"username": self.username})
+        pkt_dict.update({"timestamp": self.get_timestamp()})
+        pkt_dict.update({"serial": str(++self.serial)})
+        pkt_dict.update({"hashcode": self.hashcode_java(pkt_dict)})
         self.make_pkt(pkt_dict)
 
     def make_chatdecl(self):
         pkt_dict = {}
-        pkt_dict.update("method", "decline")
-        pkt_dict.update("username", self.username)
-        pkt_dict.update("timestamp", self.get_timestamp())
-        pkt_dict.update("serial", ++self.serial)
-        pkt_dict.update("hashcode", self.hashcode_java(pkt_dict))
+        pkt_dict.update({"method": "decline"})
+        pkt_dict.update({"username": self.username})
+        pkt_dict.update({"timestamp": self.get_timestamp()})
+        pkt_dict.update({"serial": str(++self.serial)})
+        pkt_dict.update({"hashcode": self.hashcode_java(pkt_dict)})
         self.make_pkt(pkt_dict)
 
     def make_ack(self):
@@ -276,7 +282,7 @@ class Client:
         time.sleep(5)
         if pkt_dict in self.serialized_chat.values():
             print("No ack receiveid for serial in 5 secs")
-            self.remake_pkt(self, pkt_dict)
+            self.remake_pkt(pkt_dict)
         self.stop = True
 
     def remake_pkt(self, pkt_dict):
@@ -292,7 +298,7 @@ class Client:
         time.sleep(5)
         if pkt_dict in self.serialized_chat:
             print("No ack receiveid for serial in 5 secs")
-            self.remake_pkt(self, pkt_dict)
+            self.remake_pkt(pkt_dict)
         self.stop = True
 
     def udp_send(self, bytes):

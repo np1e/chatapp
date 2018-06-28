@@ -37,6 +37,7 @@ class Server:
         for k in json_dict["data"]:
             user = User(k['username'], k['ip'])
             self.active_users.append(user)
+        self.controller.client.active_users = self.active_users
         gui_dict = {"name":"active_users", "data": self.active_users}
         self.queue.put(gui_dict)
         print(gui_dict)
