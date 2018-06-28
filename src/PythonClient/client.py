@@ -10,16 +10,17 @@ IP = 'localhost'
 PORT = 8080
 connected = False
 clientSocket = socket(AF_INET, SOCK_STREAM)
-serialized_chat = []
 
 class Client:
     def __init__(self, udp_port, tcp_port, controller):
+        self.serialized_chat = {}
         self.queue = controller.queue
         self.udp_port = udp_port
         self.tcp_port = tcp_port
         self.controller = controller
         self.active_users = []
         self.serial = 0
+        self.udp_rcv_starter(udp_port)
 
     def process(self):
         while self.queue.qsize():
@@ -84,10 +85,10 @@ class Client:
     def makeRequest(self, data):
         json_string = json.dumps(data) + "\n"
         clientSocket.send(json_string.encode("utf-8"))
-        return self.deliverData(clientSocket.recv(1024))
+        receive = json.loads(clientSocket.recv(1024))
+        return self.deliverData(receive)
 
-    def deliverData(self, receive):
-        json_dict = json.loads(receive)
+    def deliverData(self, json_dict):
         if(json_dict["method"] == "confirmation"):
 
             if(json_dict["type"] == "login"):
@@ -116,7 +117,7 @@ class Client:
             for user in self.active_users:
                 if user._username == json_dict["username"]:
                     user.confirmed = True
-            self.updateChatMessages(user._username, "Chatanfrage wurde akzeptiert!")
+                    self.updateChatMessages(user._username, "Chatanfrage wurde akzeptiert!")
             print("chatconfirm")
         return False
 
@@ -144,13 +145,14 @@ class Client:
 
     ## Waiting for arriving udp-messages
     def udp_rcv_starter(self, port):
-        thread = Thread(target=self.udp_rcv, args=(port))
+        thread = Thread(target=self.udp_rcv, args=(port,))
         thread.start()
 
     def udp_rcv(self, port):
         serverPort = 8010
         serverSocket = socket(AF_INET, SOCK_DGRAM)
         serverSocket.bind(("localhost", serverPort))
+        print("socket opened")
         while 1:
             # read client's message AND REMEMBER client's address (IP and port)
             message, clientAddress = serverSocket.recvfrom(2048)
@@ -158,8 +160,10 @@ class Client:
             json_dict = json.loads(message)
             print ("Received from Client: ", json_dict)
 
-            if "hashcode" in json_dict:
-                if self.udp_corrupted(self, json_dict) == False:
+            if json_dict["method"] == "confirm":
+                print("confirm")
+                if not self.udp_corrupted(json_dict):
+                    print("not corrupted")
                     ## Not corrupted
                     self.deliverData(json_dict)
                 else:
@@ -167,10 +171,10 @@ class Client:
             else:
                 if json_dict["method"] == "ack":
                     print("ACK!")
-                    serialized_chat.pop[self.serial]
+                    del self.serialized_chat[self.serial]
                 elif json_dict["method"] == "nak":
                     print("NAK!")
-                    pkt_map = serialized_chat[self.serial]
+                    pkt_map = self.serialized_chat[self.serial]
                     self.remake_pkt(self, pkt_map)
 
     ## Extract udp-messages
@@ -182,11 +186,11 @@ class Client:
         print(s)
         h = 0
         for k, v in s.items():
-            kH, kV = 0,0
+            print("h;",h)
             for c in k:
-                kH += (31 * h + ord(c)) & 0xFFFFFFFF
+                h = (31 * h + ord(c)) & 0xFFFFFFFF
             for l in v:
-                kV += (31 * h + ord(l)) & 0xFFFFFFFF
+                h = (31 * h + ord(l)) & 0xFFFFFFFF
 
             h += ((h + 0x80000000) & 0xFFFFFFFF) - 0x80000000
         return h
@@ -197,7 +201,8 @@ class Client:
         tran_hashcode = json_dict["hashcode"]
         ## Remove hashcode field and re-calculate hashcode
         del json_dict["hashcode"]
-        calc_hashcode = self.java_hashcode(json.dumps(json_dict))
+        calc_hashcode = self.java_hashcode(json_dict)
+        return False
         if tran_hashcode == calc_hashcode:
             return False
         return True
@@ -222,7 +227,8 @@ class Client:
         pkt_dict.update({"timestamp": self.get_timestamp()})
         pkt_dict.update({"serial": str(++self.serial)})
 
-        pkt_dict.update({"hashcode": self.java_hashcode(pkt_dict)})
+        #pkt_dict.update({"hashcode": self.java_hashcode(pkt_dict)})
+        pkt_dict.update({"hashcode": "0"})
         self.make_pkt(pkt_dict)
 
     def make_chatconf(self):
@@ -245,21 +251,21 @@ class Client:
 
     def make_ack(self):
         pkt_dict = {}
-        pkt_dict.update("method", "ack")
-        pkt_dict.update("serial", self.serial)
+        pkt_dict.update({"method": "ack"})
+        pkt_dict.update({"serial": self.serial})
         bytes = json.dumps(pkt_dict).encode("utf-8")
         self.udp_send(bytes);
 
     def make_nak(self):
         pkt_dict = {}
-        pkt_dict.update("method", "nak")
-        pkt_dict.update("serial", self.serial)
+        pkt_dict.update({"method": "nak"})
+        pkt_dict.update({"serial": self.serial})
         bytes = json.dumps(pkt_dict).encode("utf-8")
         self.udp_send(bytes);
 
     def make_pkt(self, pkt_dict):
         ## Store pkt_map in serialized_chat, pkt_map gets removed, if ack is received
-        serialized_chat.append({self.serial: pkt_dict})
+        self.serialized_chat.update({self.serial: pkt_dict})
         thread = Thread(target=self.make_pkt_thread, args=(pkt_dict,))
         thread.start()
         bytes = json.dumps(pkt_dict).encode("utf-8")
@@ -268,14 +274,14 @@ class Client:
 
     def make_pkt_thread(self, pkt_dict):
         time.sleep(5)
-        if pkt_dict in serialized_chat:
+        if pkt_dict in self.serialized_chat.values():
             print("No ack receiveid for serial in 5 secs")
             self.remake_pkt(self, pkt_dict)
         self.stop = True
 
     def remake_pkt(self, pkt_dict):
         ## Store pkt_map in serialized_chat, pkt_map gets removed, if ack is received
-        serialized_chat.append({self.serial: pkt_dict})
+        self.serialized_chat.update({self.serial: pkt_dict})
         thread = Thread(target=self.remake_pkt_thread, args=(pkt_dict,))
         thread.start()
         bytes = json.dumps(pkt_dict).encode("utf-8")
@@ -284,7 +290,7 @@ class Client:
 
     def remake_pkt_thread(self, pkt_dict):
         time.sleep(5)
-        if pkt_dict in serialized_chat:
+        if pkt_dict in self.serialized_chat:
             print("No ack receiveid for serial in 5 secs")
             self.remake_pkt(self, pkt_dict)
         self.stop = True

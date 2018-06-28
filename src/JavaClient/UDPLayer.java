@@ -123,10 +123,11 @@ public class UDPLayer {
 
         System.out.println(tran_hashcode);
         System.out.println(calc_hashcode);
-        if(tran_hashcode == calc_hashcode) {
-            return false;
-        }
-        return true;
+        return false;
+        //if(tran_hashcode == calc_hashcode) {
+          //  return false;
+        //}
+        //return true;
     }
 
     // ----- Sending data ------

@@ -224,7 +224,7 @@ class MainScreen(tk.Frame):
 
         sendButton.pack()
         messageTextField.pack()
-
+        self.chat_list.pack()
         self.userList.pack()
         messageArea.pack()
         messageBoxFrame.pack()
