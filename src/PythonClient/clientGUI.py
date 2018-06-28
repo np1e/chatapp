@@ -79,8 +79,16 @@ class ClientGUI():
         list = w.curselection()
         print(list[0])
         value = self.mainScreen.userList.get(list[0])
+        if value.requested:
+            # do something
+        else:
+            self.sendChatRequest(value)
+
         print(value)
         print('You selected user {}!'.format(value))
+
+    def sendChatRequest(self, user):
+        self.client.make_chatreq()
 
     def send(self, text):
         self.client.sendMessage(text)
