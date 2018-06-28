@@ -1,4 +1,4 @@
-import socket
+from socket import *
 import json
 import time
 import datetime
@@ -9,7 +9,7 @@ from threading import Thread
 IP = 'localhost'
 PORT = 8080
 connected = False
-clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+clientSocket = socket(AF_INET, SOCK_STREAM)
 serialized_chat = []
 
 class Client:
@@ -19,6 +19,7 @@ class Client:
         self.tcp_port = tcp_port
         self.controller = controller
         self.active_users = []
+        self.serial = 0
 
     def process(self):
         while self.queue.qsize():
@@ -170,10 +171,17 @@ class Client:
         return json_dict
 
     def java_hashcode(self, s):
+        print(s)
         h = 0
-        for c in s:
-            h = (31 * h + ord(c)) & 0xFFFFFFFF
-        return ((h + 0x80000000) & 0xFFFFFFFF) - 0x80000000
+        for k, v in s.items():
+            kH, kV = 0,0
+            for c in k:
+                kH += (31 * h + ord(c)) & 0xFFFFFFFF
+            for l in v:
+                kV += (31 * h + ord(l)) & 0xFFFFFFFF
+
+            h += ((h + 0x80000000) & 0xFFFFFFFF) - 0x80000000
+        return h
 
     ## Check hashcode
     def udp_corrupted(self, json_dict):
@@ -191,22 +199,23 @@ class Client:
 
     def make_chatmsg(self, content):
         pkt_dict = {}
-        pkt_dict.update("method", "message")
-        pkt_dict.update("username", self.username)
-        pkt_dict.update("message", content)
-        pkt_dict.update("timetamp", self.get_timestamp())
-        pkt_dict.update("serial", ++self.serial)
-        pkt_dict.update("hashcode", self.java_hashcode(pkt_dict))
-        self.make_pkt(self.serial, pkt_dict)
+        pkt_dict.update({"method": "message"})
+        pkt_dict.update({"username": self.username})
+        pkt_dict.update({"message": content})
+        pkt_dict.update({"timetamp": self.get_timestamp()})
+        pkt_dict.update({"serial": ++self.serial})
+        pkt_dict.update({"hashcode": self.java_hashcode(pkt_dict)})
+        self.make_pkt(pkt_dict)
 
     def make_chatreq(self):
         pkt_dict = {}
-        pkt_dict.update("method", "request")
-        pkt_dict.update("username", self.username)
-        pkt_dict.update("timestamp", self.get_timestamp())
-        pkt_dict.update("serial", ++self.serial)
-        pkt_dict.update("hashcode", self.java_hashcode(pkt_dict))
-        self.make_pkt(self.serial, pkt_dict)
+        pkt_dict.update({"method": "request"})
+        pkt_dict.update({"username": self.username})
+        pkt_dict.update({"timestamp": self.get_timestamp()})
+        pkt_dict.update({"serial": str(++self.serial)})
+
+        pkt_dict.update({"hashcode": self.java_hashcode(pkt_dict)})
+        self.make_pkt(pkt_dict)
 
     def make_chatconf(self):
         pkt_dict = {}
@@ -215,7 +224,7 @@ class Client:
         pkt_dict.update("timestamp", self.get_timestamp())
         pkt_dict.update("serial", ++self.serial)
         pkt_dict.update("hashcode", self.hashcode_java(pkt_dict))
-        self.make_pkt(self.serial, pkt_dict)
+        self.make_pkt(pkt_dict)
 
     def make_chatdecl(self):
         pkt_dict = {}
@@ -224,7 +233,7 @@ class Client:
         pkt_dict.update("timestamp", self.get_timestamp())
         pkt_dict.update("serial", ++self.serial)
         pkt_dict.update("hashcode", self.hashcode_java(pkt_dict))
-        self.make_pkt(self.serial, pkt_dict)
+        self.make_pkt(pkt_dict)
 
     def make_ack(self):
         pkt_dict = {}
