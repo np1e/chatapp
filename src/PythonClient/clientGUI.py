@@ -36,6 +36,14 @@ class ClientGUI():
         self._frame = None
         self.switch_frame(self.welcomeScreen)
 
+        root.protocol("WM_DELETE_WINDOW", self.on_closing)
+
+    def on_closing(self):
+        self.client.logout()
+        root.destroy()
+        sys.exit()
+
+
     def switch_frame(self, frame):
         """Destroys current frame and replaces it with a new one."""
         self.new_frame = frame
@@ -77,15 +85,15 @@ class ClientGUI():
     def onUserSelect(self, evt):
         w = evt.widget
         list = w.curselection()
-        print(list[0])
-        value = self.mainScreen.userList.get(list[0])
-        if value.requested:
+        #print(list[0])
+        #value = self.mainScreen.userList.get(list[0])
+        #if value.requested:
             # do something
-        else:
-            self.sendChatRequest(value)
+        #else:
+        self.sendChatRequest(value)
 
-        print(value)
-        print('You selected user {}!'.format(value))
+        #print(value)
+        #print('You selected user {}!'.format(value))
 
     def sendChatRequest(self, user):
         self.client.make_chatreq()
