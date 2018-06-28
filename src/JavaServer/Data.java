@@ -31,4 +31,8 @@ public class Data {
     public boolean exists(String username) {
         return users.containsKey(username);
     }
+
+    public boolean getUser(String username) {
+        return users.containsKey(username);
+    }
 }

@@ -29,7 +29,7 @@ class Client:
         data = {
             'method' : 'login',
             'username' : username,
-            'password' : password,
+            'password' : password[::-1],
             'tcpport' : tcpport,
             'udpport' : udpport
         }
@@ -49,8 +49,8 @@ class Client:
         data = {
             "method" : "register",
             "username" : username,
-            "password" : password,
-            "confirm": confirm
+            "password" : password[::-1],
+            "confirm": confirm[::-1]
         }
         return self.makeRequest(data)
 
@@ -76,7 +76,7 @@ class Client:
         if(json_dict["method"] == "confirmation"):
 
             if(json_dict["type"] == "login"):
-                if(json_dict["status"] == 0):
+                if(json_dict["status"] == "0"):
                     print("failed authentification")
                     return False
                 else:
@@ -84,10 +84,12 @@ class Client:
                     return True
 
             if(json_dict["type"] == "register"):
-                if(json_dict["status"] == 0):
-                    print("failed registration")
-                else:
+                if(json_dict["status"] == "2"):
                     print("successful registration")
+                elif(json_dict["status"] == "1"):
+                    print("username already in use")
+                elif(json_dict["status"] == "0"):
+                    print("password must match")
 
         if(json_dict["method"] == "message"):
             self.updateChatMessages(json_dict["username"], json_dict["message"], False)

@@ -105,7 +105,7 @@ public class Server {
         switch(request.get("method").getAsString()){
             case "login":
                 username = request.get("username").getAsString();
-                password = request.get("password").getAsString();
+                password = new StringBuilder(request.get("password").getAsString()).reverse().toString();
                 port = request.get("tcpport").getAsString();
                 setLogs("requesting login");
                 if(checkAuthentication(username,password)) {
@@ -114,17 +114,17 @@ public class Server {
                     sendConfirmation("login", "1", writer);
                     sendActiveUserList(writer);
                 } else {
-                    sendConfirmation("login", "0", writer);
                     setLogs("Authentication failed.");
+                    sendConfirmation("login", "0", writer);
                 }
 
                 break;
             case "register":
                 username = request.get("username").getAsString();
-                password = request.get("password").getAsString();
+                password = new StringBuilder(request.get("password").getAsString()).reverse().toString();
                 setLogs("requesting register");
                 if(!userData.exists(username)) {
-                    if (!password.equals(request.get("confirm").getAsString())) {
+                    if (!password.equals(new StringBuilder(request.get("confirm").getAsString()).reverse().toString())) {
                         setLogs("passwords must match");
                         sendConfirmation("register", "0", writer);
                         break;
@@ -162,10 +162,16 @@ public class Server {
         sendMessage(toJson(json), writer);
     }
 
-    private boolean checkAuthentication(String username, String password_hash) {
-
-        return userData.getPW(username).equals(password_hash);
-
+    private boolean checkAuthentication(String username, String password_hash){
+        if(userData.getUser(username)) {
+            try {
+                return userData.getPW(username).equals(password_hash);
+            }
+            catch(NullPointerException e) {
+                return false;
+            }
+        }
+        return false;
     }
 
     private String toJson(JsonObject json) {
