@@ -17,6 +17,7 @@ class Client:
 
     def login(self, username, password, tcpport, udpport):
         self.connect(IP,PORT)
+        self.username = username
         data = {
             'method' : 'login',
             'username' : username,
@@ -83,3 +84,34 @@ class Client:
         if not connected:
             clientSocket.connect((ip, port))
             connected = True
+
+    def make_chatreq(self):
+        pkt_dict = {}
+        pkt_dict.update("method", "request")
+        pkt_dict.update("username", username)
+        pkt_dict.update("timestamp", get_timestamp())
+        pkt_dict.update("serial", ++self.serial)
+        pkt_dict.update("hashcode", hashcode_java(pkt_dict))
+
+        make_pkt(self.serial, pkt_dict)
+
+    def make_chatconf(self):
+        pkt_dict = {}
+        pkt_dict.update("method", "confirm")
+        pkt_dict.update("username", username)
+        pkt_dict.update("timestamp", get_timestamp())
+        pkt_dict.update("serial", ++self.serial)
+        pkt_dict.update("hashcode", hashcode_java(pkt_dict))
+
+        make_pkt(self.serial, pkt_dict)
+
+    def make_chatreq(self):
+        pkt_dict = {}
+        pkt_dict.update("method", "decline")
+        pkt_dict.update("username", username)
+        pkt_dict.update("timestamp", get_timestamp())
+        pkt_dict.update("serial", ++self.serial)
+        pkt_dict.update("hashcode", hashcode_java(pkt_dict))
+
+        make_pkt(self.serial, pkt_dict)
+
