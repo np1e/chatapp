@@ -2,6 +2,8 @@ import socket
 import json
 import time
 import datetime
+from data import Message, User
+from queue import Queue
 
 IP = 'localhost'
 PORT = 8080
@@ -15,7 +17,21 @@ class Client:
         self.udp_port = udp_port
         self.tcp_port = tcp_port
         self.controller = controller
+        self.active_users = []
 
+    def process(self):
+        while self.queue.qsize():
+            try:
+                item = self.queue.get()
+                if item['name'] == "active_users":
+                    for user in item["data"]:
+                        self.active_users.append(User(user["username"], user["ip"]))
+                    print(item)
+                self.queue.task_done()
+            except Queue.Empty:
+                pass
+
+        self.root.after(1000, self.process)
 
     def login(self, username, password, tcpport, udpport):
         self.connect(IP,PORT)
@@ -41,6 +57,13 @@ class Client:
         return self.makeRequest(data)
 
     def sendMessage(self, msg):
+        if(self.request):
+            if msg in ['y', 'Y', 'yes', 'Yes']:
+                self.make_chatconf()
+                self.request = False
+            elif msg in ['n', 'N', 'no', 'No']:
+                self.make_chatdecl()
+                self.request = False
         #serverName = "localhost"
         #serverPort = 12000
         #clientSocket = socket(AF_INET, SOCK_DGRAM)
@@ -72,11 +95,26 @@ class Client:
                     print("successful registration")
 
         if(json_dict["method"] == "message"):
-            print("message")
-        if(json_dict["method"] == "chatrequest"):
-            print("chatrequest")
 
+            print("message")
+        if(json_dict["method"] == "request"):
+            self.request = True
+            self.updateChatMessages(json_dict["username"], "Chatanfrage von User ", json_dict["username"], "erhalten.")
+            self.updateChatMessages("Annehmen?")
+            print("chatrequest")
+        if(json_dict["method"] == "confirm"):
+            for user in self.active_users:
+                if user._username == json_dict["username"]:
+                    user.confirmed = True
+            self.updateChatMessages(user._username, "Chatanfrage wurde akzeptiert!")
+            print("chatconfirm")
         return False
+
+    def updateChatMessages(self, username, msg):
+        for user in self.active_users:
+            if user._username == username:
+                user._chat.append(Message(msg, self.get_timestamp(), user))
+                self.queue.put(user._chat)
 
     def close(self):
         clientSocket.close()
