@@ -4,12 +4,13 @@ import time
 import datetime
 from data import Message, User
 from queue import Queue
+from threading import Thread
 
 IP = 'localhost'
 PORT = 8080
 connected = False
 clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
+serialized_chat = []
 
 class Client:
     def __init__(self, udp_port, tcp_port, controller):
@@ -128,7 +129,40 @@ class Client:
 
     ## UDP
 
+
     ## Receive
+
+
+    ## Waiting for arriving udp-messages
+    def udp_rcv_starter(self, port):
+        thread = Thread(target=self.udp_rcv, args=(port))
+        thread.start()
+
+    def udp_rcv(self, port):
+        serverPort = 8010
+        serverSocket = socket(AF_INET, SOCK_DGRAM)
+        serverSocket.bind(("localhost", serverPort))
+        while 1:
+            # read client's message AND REMEMBER client's address (IP and port)
+            message, clientAddress = serverSocket.recvfrom(2048)
+            # output to console the sentence received from client over UDP
+            json_dict = json.loads(message)
+            print ("Received from Client: ", json_dict)
+
+            if "hashcode" in json_dict:
+                if self.udp_corrupted(self, json_dict) == False:
+                    ## Not corrupted
+                    self.deliverData(json_dict)
+                else:
+                    self.make_nak()
+            else:
+                if json_dict["method"] == "ack":
+                    print("ACK!")
+                    serialized_chat.pop[self.serial]
+                elif json_dict["method"] == "nak":
+                    print("NAK!")
+                    pkt_map = serialized_chat[self.serial]
+                    self.remake_pkt(self, pkt_map)
 
     ## Extract udp-messages
     def udp_extract(self, jsonString):
@@ -151,6 +185,7 @@ class Client:
         if tran_hashcode == calc_hashcode:
             return False
         return True
+
 
     ## Send
 
@@ -190,6 +225,59 @@ class Client:
         pkt_dict.update("serial", ++self.serial)
         pkt_dict.update("hashcode", self.hashcode_java(pkt_dict))
         self.make_pkt(self.serial, pkt_dict)
+
+    def make_ack(self):
+        pkt_dict = {}
+        pkt_dict.update("method", "ack")
+        pkt_dict.update("serial", self.serial)
+        bytes = json.dumps(pkt_dict).encode("utf-8")
+        self.udp_send(bytes);
+
+    def make_nak(self):
+        pkt_dict = {}
+        pkt_dict.update("method", "nak")
+        pkt_dict.update("serial", self.serial)
+        bytes = json.dumps(pkt_dict).encode("utf-8")
+        self.udp_send(bytes);
+
+    def make_pkt(self, pkt_dict):
+        ## Store pkt_map in serialized_chat, pkt_map gets removed, if ack is received
+        serialized_chat.append({self.serial: pkt_dict})
+        thread = Thread(target=self.make_pkt_thread, args=(pkt_dict,))
+        thread.start()
+        bytes = json.dumps(pkt_dict).encode("utf-8")
+        print(bytes)
+        self.udp_send(bytes)
+
+    def make_pkt_thread(self, pkt_dict):
+        time.sleep(5)
+        if pkt_dict in serialized_chat:
+            print("No ack receiveid for serial in 5 secs")
+            self.remake_pkt(self, pkt_dict)
+        self.stop = True
+
+    def remake_pkt(self, pkt_dict):
+        ## Store pkt_map in serialized_chat, pkt_map gets removed, if ack is received
+        serialized_chat.append({self.serial: pkt_dict})
+        thread = Thread(target=self.remake_pkt_thread, args=(pkt_dict,))
+        thread.start()
+        bytes = json.dumps(pkt_dict).encode("utf-8")
+        print(bytes)
+        self.udp_send(bytes)
+
+    def remake_pkt_thread(self, pkt_dict):
+        time.sleep(5)
+        if pkt_dict in serialized_chat:
+            print("No ack receiveid for serial in 5 secs")
+            self.remake_pkt(self, pkt_dict)
+        self.stop = True
+
+    def udp_send(self, bytes):
+        goalPort = 9010
+        serverName = "localhost"
+        clientSocket = socket(AF_INET, SOCK_DGRAM)
+        clientSocket.sendto((bytes), (serverName, goalPort))
+        clientSocket.close()
 
     def get_timestamp(self):
         t = time.time()
