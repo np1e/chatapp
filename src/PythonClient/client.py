@@ -47,6 +47,14 @@ class Client:
         }
         return self.makeRequest(data)
 
+    def logout(self):
+        print("logout")
+        self.connect(IP, PORT)
+        data = {
+            'method' : 'logout',
+            'username' : self.username
+        }
+        return  self.makeRequest(data)
 
     def register(self, username, password, confirm):
         self.connect(IP,PORT)

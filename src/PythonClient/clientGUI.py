@@ -36,6 +36,14 @@ class ClientGUI():
         self._frame = None
         self.switch_frame(self.welcomeScreen)
 
+        root.protocol("WM_DELETE_WINDOW", self.on_closing)
+
+    def on_closing(self):
+        self.client.logout()
+        root.destroy()
+        sys.exit()
+
+
     def switch_frame(self, frame):
         """Destroys current frame and replaces it with a new one."""
         self.new_frame = frame
