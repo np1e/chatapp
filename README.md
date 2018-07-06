@@ -22,16 +22,19 @@ c.	PythonClient/clientGUI.py: “9010 9091”
 6.	Chatnachrichten schreiben in Client A und B
 7.	Beenden des Programms über Logout und Schließen des Windows oder direkt Window schließen
 ###Erläuterung:
+
 Vor dem Start der Clients muss der JavaServer gestartet sein!
 Die Kommunikation zwischen Client-Client und Client-Server wird testweise über Ports abgebildet (Deshalb ist es zwingend notwendig entsprechende TCP und UDP Ports als Kommandozeilenparameter zu übergeben).
-Unsere ChatApp besteht aus:
-•	JavaClient (ClientGUI.java) (Mit Kommandozeilenparametern "9010 9081")
+
+######Unsere ChatApp besteht aus:
+
+#####JavaClient (ClientGUI.java) (Mit Kommandozeilenparametern "9010 9081")
 Der JavaClient kann vom Benutzer gestartet werden, indem er die ClientGUI.java ausführt.
 Hier wird dem Benutzer eine GUI zur Verfügung gestellt, auf der er sich registrieren und einloggen kann. Nach dem erfolgreichen Login wird der Nutzer auf die Chat-Oberfläche weitergeleitet. Hier kann er links einen Nutzer anklicken. Durch den Klick wird eine Chatanfrage an den Nutzer gesendet. Nimmt der Nutzer die erhaltene Chatanfrage an, können die beiden Nutzer chatten.
-•	PythonClient (clientGUI.py) (Mit Kommandozeilenparametern "8010 8081")
+#####PythonClient (clientGUI.py) (Mit Kommandozeilenparametern "8010 8081")
 Der PythonClient kann gestaret werden, indem clientGUI.py ausgeführt wird (Mit Kommandozeilenparametern "8010 8081").
 Der Client bietet ebenfalls eine GUI und dieselben Funktionen an.
-•	JavaServer
+#####JavaServer
 Der JavaServer ist für das anlegen von Userdaten (Registrieren), die Validation dieser beim Einloggen (Login), und die Aktualisierung der Liste von aktiven Usern zuständig.
 Technische Erläuterung:
 Die Kommunikation zwischen Client-Client findet über UDP statt.
